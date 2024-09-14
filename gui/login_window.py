@@ -3,7 +3,6 @@
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
-from kivymd.app import MDApp
 from controllers.user_login_controller import LoginController
 import asyncio
 from base_logger import getlogger
