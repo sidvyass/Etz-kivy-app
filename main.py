@@ -1,17 +1,19 @@
-from kivy.app import App
+# from kivy.app import App
+from kivymd.app import MDApp
 from database.user_database import UserAuthentication
-from gui.main_window import LoginWindow
+from gui.login_window import LoginWindow
 from controllers.user_login_controller import LoginController
 import asyncio
 
 
-class LoginApp(App):
+class LoginApp(MDApp):
     def build(self):
         # Initialize the Model, View, and Controller
         model = UserAuthentication()
-        view = LoginWindow(controller=None)
         controller = LoginController(model)
-        view.controller = controller
+        view = LoginWindow(controller=controller)
+
+        self.theme_cls.primary_palette = "Blue"
 
         return view
 
