@@ -3,21 +3,33 @@
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
-from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
+from kivy.core.window import Window
+
+from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.boxlayout import MDBoxLayout
 
 KV = """
+<ContentNavigationDrawer@MDBoxLayout>:
+    orientation: 'vertical'
+    padding: dp(10)
+    spacing: dp(10)
+    MDLabel:
+        text: 'Navigation Drawer'
+        font_style: 'Subtitle1'
+
 <HomeWindow>:
     name: 'main_window'
 
-    MDBoxLayout:
+    BoxLayout:
         orientation: 'vertical'
 
-        # Top Navigation Bar (10% of screen height)
+        # Top Navigation Bar
         MDTopAppBar:
             title: "Home"
-            elevation: 10
-            left_action_items: [["menu", lambda x: root.toggle_nav_drawer()]]
+            elevation: 0  # Flat design
+            md_bg_color: app.theme_cls.primary_color
+            # left_action_items: [["menu", lambda x: root.toggle_nav_drawer()]]
             right_action_items:
                 [
                 ["button1", lambda x: root.on_button1_press()],
@@ -26,16 +38,17 @@ KV = """
                 ["button4", lambda x: root.on_button4_press()],
                 ["button5", lambda x: root.on_button5_press()]
                 ]
-            height: self.theme_cls.standard_increment
             size_hint_y: None
+            height: dp(56)
 
-        # Rest of the screen (90%)
-        MDBoxLayout:
+        # Rest of the screen
+        BoxLayout:
             orientation: 'vertical'
-            padding: dp(10)
-            spacing: dp(10)
+            padding: dp(20)
+            spacing: dp(10)  # Adjusted spacing
 
-            MDBoxLayout:
+            # Search Bar
+            BoxLayout:
                 orientation: 'horizontal'
                 spacing: dp(10)
                 size_hint_y: None
@@ -51,16 +64,15 @@ KV = """
                     text: "Search"
                     size_hint_x: 0.2
                     on_release: root.on_search_button()
+                    md_bg_color: app.theme_cls.primary_color
+                    elevation: 0
 
-            ScrollView:
-                MDList:
-                    id: table_container
-
-    MDNavigationDrawer:
-        id: nav_drawer
-
-        ContentNavigationDrawer:
-            id: content_drawer
+            # Data Table Container
+            BoxLayout:
+                id: table_container
+                orientation: 'vertical'
+                size_hint_y: 1
+                size_hint_x: 1
 """
 
 Builder.load_string(KV)
@@ -82,32 +94,50 @@ class HomeWindow(Screen):
         self.controller.perform_search(search_text)
 
     def create_table(self):
-        # Create the data table with dummy data
+        # Calculate total available width
+        total_width = self.ids.table_container.width
+
+        # If total_width is 0, default to Window width minus padding
+        if total_width == 0:
+            total_width = Window.width - dp(40)  # Adjust for padding if any
+
+        # Define proportional widths (percentages)
+        column_ratios = [0.4, 0.2, 0.2, 0.2]  # Adjust as needed
+
+        # Calculate column widths based on ratios
+        column_widths = [
+            ("Name", total_width * column_ratios[0]),
+            ("Date of Publishing", total_width * column_ratios[1]),
+            ("Date of Scrape", total_width * column_ratios[2]),
+            ("Type of Change", total_width * column_ratios[3]),
+        ]
+
+        # Create the data table with dynamic column widths
         self.data_tables = MDDataTable(
             size_hint=(1, 1),
             use_pagination=True,
-            check=True,  # Include checkboxes for each row
-            column_data=[
-                ("Name", dp(30)),
-                ("Date of Publishing", dp(30)),
-                ("Date of Scrape", dp(30)),
-                ("Type of Change", dp(30)),
-            ],
+            check=True,
+            column_data=column_widths,
             row_data=[
                 # Dummy data
                 ("Document 1", "2023-01-01", "2023-01-10", "AA"),
                 ("Document 2", "2023-02-01", "2023-02-05", "BB"),
-                ("Document 3", "2023-03-15", "2023-03-20", "CC"),
-                ("Document 4", "2023-04-10", "2023-04-18", "DD"),
-                ("Document 5", "2023-05-25", "2023-05-30", "EE"),
-                ("Document 6", "2023-06-12", "2023-06-22", "FF"),
-                ("Document 7", "2023-07-01", "2023-07-05", "GG"),
-                ("Document 8", "2023-08-09", "2023-08-14", "HH"),
+                # ... more data
             ],
         )
 
-        # Add the data table to the container in the KV layout
+        # Add the data table to the container
+        self.ids.table_container.clear_widgets()
         self.ids.table_container.add_widget(self.data_tables)
+
+        # Bind to size changes
+        self.ids.table_container.bind(size=self.update_table_columns)
+
+    def update_table_columns(self, *args):
+        # Remove the old table
+        self.ids.table_container.clear_widgets()
+        # Recreate the table with updated widths
+        self.create_table()
 
     # Button event handlers
     def on_button1_press(self):
@@ -126,5 +156,5 @@ class HomeWindow(Screen):
         pass  # Implement as needed
 
 
-class ContentNavigationDrawer(Screen):
+class ContentNavigationDrawer(MDBoxLayout):
     pass
