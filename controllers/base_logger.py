@@ -4,7 +4,7 @@ import loguru
 LOGGER = None
 
 
-def getlogger(name: str = "DefaultName", level="DEBUG") -> loguru.logger: # type: ignore
+def getlogger(name: str = "DefaultName", level="DEBUG") -> loguru.logger:  # type: ignore
     """Initialize logging for app returning logger."""
     global LOGGER  # pylint: disable=global-statement
 

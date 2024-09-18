@@ -1,12 +1,11 @@
+import asyncio
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.metrics import dp
-from kivy.core.window import Window
-from kivy.clock import Clock
-
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.boxlayout import MDBoxLayout
+
 
 KV = """
 <ContentNavigationDrawer@MDBoxLayout>:
@@ -23,21 +22,70 @@ KV = """
     BoxLayout:
         orientation: 'vertical'
 
-        # Top Navigation Bar
-        MDTopAppBar:
-            title: "Home"
-            elevation: 0  # Flat design
-            md_bg_color: app.theme_cls.primary_color
-            right_action_items:
-                [
-                ["button1", lambda x: root.on_button1_press()],
-                ["button2", lambda x: root.on_button2_press()],
-                ["button3", lambda x: root.on_button3_press()],
-                ["button4", lambda x: root.on_button4_press()],
-                ["button5", lambda x: root.on_button5_press()]
-                ]
+        # Custom Top Navigation Bar
+        MDBoxLayout:
+            orientation: 'horizontal'
             size_hint_y: None
             height: dp(56)
+            md_bg_color: app.theme_cls.primary_color
+            padding: dp(10), 0
+            spacing: dp(10)
+
+            # "Home" Label
+            MDLabel:
+                text: "Home"
+                font_style: "H6"
+                halign: "left"
+                valign: "center"
+                size_hint_x: None
+                width: dp(60)
+                color: 1, 1, 1, 1  # White text
+                pos_hint: {'center_y': 0.5}
+
+            # Expandable Widget to push the buttons to the right
+            Widget:
+                size_hint_x: 1
+
+            # Status label
+            MDLabel:
+                text: "Status"
+                halign: "left"
+                valign: "middle"
+                size_hint_x: None
+                width: dp(50)  # Adjust width of the label
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1  # White text color
+
+            # Status light icon
+            MDIconButton:
+                id: status_light
+                icon: "circle"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1  # Default white color (not running)
+                pos_hint: {'center_y': 0.5}
+                size_hint: None, None
+                size: dp(20), dp(20)  # Small size for the indicator
+
+            # "Run Scraper" Button
+            MDFlatButton:
+                text: "Run Scraper"
+                text_color: 1, 1, 1, 1  # White text
+                md_bg_color: 0, 0.6, 0, 1  # Green background
+                on_release: root.on_button1_press()
+                size_hint: None, None
+                size: dp(100), dp(36)
+                pos_hint: {'center_y': 0.5}
+                padding: dp(10), dp(5)
+
+            # "Logout" Button
+            MDFlatButton:
+                text: "Logout"
+                text_color: 1, 1, 1, 1  # White text
+                on_release: root.on_logout_press()
+                size_hint: None, None
+                size: dp(80), dp(36)
+                pos_hint: {'center_y': 0.5}
+                padding: dp(10), dp(5)
 
         # Rest of the screen
         BoxLayout:
@@ -69,14 +117,12 @@ KV = """
             ScrollView:
                 do_scroll_x: True
                 do_scroll_y: False
-                MDBoxLayout:
+                AnchorLayout:
                     id: table_container
-                    orientation: 'vertical'
-                    size_hint_y: None
-                    height: self.minimum_height
-                    size_hint_x: None
-                    width: self.minimum_width
+                    size_hint_x: 1
+                    size_hint_y: 1
 """
+
 
 Builder.load_string(KV)
 
@@ -88,74 +134,39 @@ class HomeWindow(Screen):
     def __init__(self, controller, **kwargs):
         super(HomeWindow, self).__init__(**kwargs)
         self.controller = controller
-        Clock.schedule_once(self.create_table, 0)
+        self.create_table()
 
-    def create_table(self, dt):
-        total_width = self.ids.table_container.width
-
-        if total_width == 0:
-            total_width = Window.width - dp(40)  # Adjust for padding if any
-
-        column_ratios = [0.25, 0.25, 0.25, 0.25]
-
+    def create_table(self):
         column_widths = [
-            ("Name", dp(200)),
-            ("Date of Publishing", dp(200)),
-            ("Date of Scrape", dp(200)),
-            ("Type of Change", dp(200)),
+            ("Date of Publishing", dp(50)),
+            ("Name", dp(100)),
+            ("Date of Scrape", dp(60)),
+            ("Type of Change", dp(100)),
         ]
 
-        print(f"Total width: {total_width}")
-        for name, width in column_widths:
-            print(f"Column '{name}' width: {width}")
-
         self.data_tables = MDDataTable(
-            size_hint=(None, None),
-            size=(dp(800), dp(400)),  # Adjust size as needed
+            size_hint=(1, 1),
             use_pagination=True,
             check=True,
             column_data=column_widths,
             row_data=[
-                # Dummy data
                 ("Document 1", "2023-01-01", "2023-01-10", "AA"),
                 ("Document 2", "2023-02-01", "2023-02-05", "BB"),
-                # ... more data
             ],
         )
 
         self.ids.table_container.clear_widgets()
         self.ids.table_container.add_widget(self.data_tables)
 
-        if not self.table_size_bound:
-            self.ids.table_container.bind(size=self.update_table_columns)
-            self.table_size_bound = True
+    async def start_scraper_update_gui(self):
+        response = await self.controller.start_scraper_on_server()
+        # TODO: code to update the gui once it returns true or false
 
-    def update_table_columns(self, instance, value):
-        # Unbind the size event to prevent recursion
-        self.ids.table_container.unbind(size=self.update_table_columns)
-        self.table_size_bound = False
-
-        # Remove the old table
-        self.ids.table_container.clear_widgets()
-
-        # Recreate the table with updated widths
-        self.create_table(None)
-
-    # Button event handlers
     def on_button1_press(self):
-        pass  # Implement as needed
+        asyncio.create_task(self.start_scraper_update_gui())
 
-    def on_button2_press(self):
-        pass  # Implement as needed
-
-    def on_button3_press(self):
-        pass  # Implement as needed
-
-    def on_button4_press(self):
-        pass  # Implement as needed
-
-    def on_button5_press(self):
-        pass  # Implement as needed
+    def on_logout_press(self):
+        self.controller.logout()
 
 
 class ContentNavigationDrawer(MDBoxLayout):

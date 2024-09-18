@@ -1,6 +1,7 @@
 import requests
-from base_logger import getlogger
+from controllers.base_logger import getlogger
 import aiohttp
+import time
 
 
 class UserAPI:
@@ -13,7 +14,11 @@ class UserAPI:
         }
         self._is_logged_in = False
 
-    async def login(self):
+    def dummy_call(self):
+        req = requests.get("http://127.0.0.1:8000/")
+        print(req.json())
+
+    def login(self):
         req = requests.post("http://127.0.0.1:8000/login", data=self.data)
         if req.status_code == 200:
             self.LOGGER.info("Authenication success!")
@@ -24,9 +29,15 @@ class UserAPI:
         else:
             return False
 
-    async def make_auth_call(self):
+    def make_auth_call(self):
         "/document-scraped-data"
         req = requests.get(self.url + "/document-scraped-data", headers=self.headers)
         self.LOGGER.info(f"{req}")
+        if req.status_code == 200:
+            print(req.json())
+
+    def start_scraper(self):
+        req = requests.post(f"{self.url}/run-scraper-service", headers=self.headers)
+
         if req.status_code == 200:
             print(req.json())

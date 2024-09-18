@@ -1,5 +1,5 @@
 import asyncio
-from base_logger import getlogger
+from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI
 
 
@@ -12,7 +12,9 @@ class LoginController:
 
     async def authenticate(self, username: str, password: str):
         # NOTE: dev
-        self.user = UserAPI(username, password)
+        self.user = UserAPI("60009", "67220")
+        self.app.show_small_notification("Success...")
+
         # auth = await self.user.login()
         #
         # if not auth:

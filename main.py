@@ -1,6 +1,10 @@
 # from kivy.app import App
 from kivymd.app import MDApp
-from kivy.uix.screenmanager import ScreenManager
+from kivymd.uix.label import MDLabel
+from kivymd.uix.snackbar.snackbar import MDSnackbar
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDRaisedButton
+from kivy.uix.screenmanager import ScreenManager, NoTransition
 from gui.login_window import LoginWindow
 from controllers.user_login_controller import LoginController
 from controllers.main_controller import MainWindowController
@@ -8,16 +12,22 @@ from gui.main_window import HomeWindow
 import asyncio
 
 
-class LoginApp(MDApp):
+class EsisAutoApp(MDApp):
+    dialog = None
+
     def build(self):
-        self.screen_manager = ScreenManager()
+        self.screen_manager = ScreenManager(transition=NoTransition())
         # Initialize the Model, View, and Controller
         controller = LoginController(self)
         view = LoginWindow(controller=controller)
 
-        self.theme_cls.primary_palette = "Blue"
+        self.theme_cls.primary_palette = "BlueGray"
 
         self.screen_manager.add_widget(view)
+
+        # notifications
+        self.current_dialog = None  # might not need to track this
+        self.current_snackbar = None
 
         return self.screen_manager
 
@@ -31,6 +41,41 @@ class LoginApp(MDApp):
         self.screen_manager.add_widget(main_view)
         self.screen_manager.current = "main_window"
 
+    def show_small_notification(self, in_text: str):
+        if self.current_snackbar:
+            self.current_snackbar.bind(
+                on_dismiss=lambda *args: self.show_new_snackbar(in_text)
+            )
+            self.current_snackbar.dismiss()
+        else:
+            self.show_new_snackbar(in_text)
+
+    def show_new_snackbar(self, in_text: str):
+        self.current_snackbar = MDSnackbar(
+            MDLabel(
+                text=in_text,
+            ),
+        )
+        self.current_snackbar.open()
+
+    # ******** large notifications ***********
+
+    def show_notification(self, title: str, text: str):
+        self.dialog = MDDialog(
+            title=title,
+            text=text,
+            buttons=[
+                MDRaisedButton(text="OK", on_release=self.close_dialog),
+                MDRaisedButton(text="Cancel", on_release=self.close_dialog),
+            ],
+        )
+        self.dialog.open()
+
+    def close_dialog(self, *args):
+        self.dialog.dismiss()
+
+    # ******** END ***********
+
 
 if __name__ == "__main__":
-    asyncio.run(LoginApp().async_run(async_lib="asyncio"))
+    asyncio.run(EsisAutoApp().async_run(async_lib="asyncio"))

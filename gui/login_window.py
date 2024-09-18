@@ -5,7 +5,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from controllers.user_login_controller import LoginController
 import asyncio
-from base_logger import getlogger
+from gui.base_logger import getlogger
 
 KV = """
 <LoginWindow>:
