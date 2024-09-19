@@ -1,10 +1,16 @@
 import asyncio
+import os
+from kivymd.uix.button import MDFlatButton
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.metrics import dp
 from kivymd.uix.datatables import MDDataTable
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.clock import Clock
+from kivy.utils import get_color_from_hex
+from gui.base_logger import getlogger
+from controllers.main_controller import MainWindowController
 
 
 KV = """
@@ -133,34 +139,90 @@ class HomeWindow(Screen):
 
     def __init__(self, controller, **kwargs):
         super(HomeWindow, self).__init__(**kwargs)
-        self.controller = controller
+        self.controller: MainWindowController = controller
         self.create_table()
+        self.LOGGER = getlogger("home window")
+        Clock.schedule_interval(self.queue_update_scraper, 15)  # status LIGHT
+        self.queue_update_scraper()
+        Clock.schedule_interval(self.queue_update_documents, 60)
+        self.queue_update_documents()
 
-    def create_table(self):
+    def create_table(self, rows=[("Fetching Data...", "", "", "", "", "")]):
         column_widths = [
-            ("Date of Publishing", dp(50)),
-            ("Name", dp(100)),
-            ("Date of Scrape", dp(60)),
-            ("Type of Change", dp(100)),
+            ("PO Number", dp(50)),
+            ("CO Number", dp(25)),
+            ("Type of CO", dp(50)),
+            ("Date", dp(50)),
+            ("FilePath", dp(50)),  # This will act like a button (clickable text)
+            ("FileName", dp(50)),
+            ("Description", dp(100)),
+
         ]
+
+        # Prepare row data with clickable text for FilePath column
+        row_with_buttons = []
+        for row in rows:
+            file_path = row[4]
+            file_button = f"[Open File]"  # Text that acts like a button
+
+            # Replace the FilePath column with the clickable text (file_button)
+            new_row = (row[0], row[1], row[2], row[3], file_button, row[5])
+            row_with_buttons.append(new_row)
 
         self.data_tables = MDDataTable(
             size_hint=(1, 1),
             use_pagination=True,
             check=True,
             column_data=column_widths,
-            row_data=[
-                ("Document 1", "2023-01-01", "2023-01-10", "AA"),
-                ("Document 2", "2023-02-01", "2023-02-05", "BB"),
-            ],
+            row_data=row_with_buttons,
         )
 
+        # Clear existing widgets and add the new table
         self.ids.table_container.clear_widgets()
         self.ids.table_container.add_widget(self.data_tables)
 
+        # Add a row click event
+        self.data_tables.bind(on_row_press=self.on_row_press)
+
+    def on_row_press(self, instance_table, instance_row):
+        # Get the row data
+        row_data = instance_row.table.recycle_data[instance_row.index]["text"]
+
+        # Check if the clicked row contains an "Open File" text in the file path column
+        if "[Open File]" in row_data:
+            file_path = row_data.split("[Open File]")[0].strip()  # Extract file path
+            self.controller.open_file(file_path)
+
+    # ---------- status LIGHT --------------------
+
+    def queue_update_scraper(self, *args):
+        asyncio.create_task(self.async_start_update_scraper())
+
+    async def async_start_update_scraper(self):
+        result = await self.controller.get_scraper_status()
+        if result:
+            self.ids.status_light.text_color = get_color_from_hex("#00FF00")  # Green
+        else:
+            self.ids.status_light.text_color = get_color_from_hex("#FFFFFF")  # White
+
+    # -------------------------------------------
+
     async def start_scraper_update_gui(self):
+        """This just sends a requst to activate the scraper"""
         response = await self.controller.start_scraper_on_server()
-        # TODO: code to update the gui once it returns true or false
+        if response:
+            self.ids.status_light.text_color = get_color_from_hex("#00FF00")  # Green
+
+    # --------------- document display -------------
+
+    def queue_update_documents(self, *args):
+        asyncio.create_task(self.async_start_update_document())
+
+    async def async_start_update_document(self):
+        """Our controller calls the create table statement to update"""
+        await self.controller.fetch_update_documents(self)
+
+    # ------------------------------------------
 
     def on_button1_press(self):
         asyncio.create_task(self.start_scraper_update_gui())

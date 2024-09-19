@@ -41,7 +41,10 @@ class EsisAutoApp(MDApp):
         self.screen_manager.add_widget(main_view)
         self.screen_manager.current = "main_window"
 
+    # *********** small notifications **************
+
     def show_small_notification(self, in_text: str):
+        """Helper function to show notification used by the controllers"""
         if self.current_snackbar:
             self.current_snackbar.bind(
                 on_dismiss=lambda *args: self.show_new_snackbar(in_text)
@@ -51,6 +54,7 @@ class EsisAutoApp(MDApp):
             self.show_new_snackbar(in_text)
 
     def show_new_snackbar(self, in_text: str):
+        """Helper function to show notification used by the controllers"""
         self.current_snackbar = MDSnackbar(
             MDLabel(
                 text=in_text,
@@ -72,7 +76,8 @@ class EsisAutoApp(MDApp):
         self.dialog.open()
 
     def close_dialog(self, *args):
-        self.dialog.dismiss()
+        """Only called after the show notification"""
+        self.dialog.dismiss()  # type: ignore
 
     # ******** END ***********
 

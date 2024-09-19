@@ -1,12 +1,8 @@
 import requests
-from controllers.base_logger import getlogger
-import aiohttp
-import time
 
 
 class UserAPI:
     def __init__(self, username, password):
-        self.LOGGER = getlogger(f"client {username}")
         self.url = "http://127.0.0.1:8000"
         self.data = {
             "username": username,
@@ -14,14 +10,12 @@ class UserAPI:
         }
         self._is_logged_in = False
 
-    def dummy_call(self):
-        req = requests.get("http://127.0.0.1:8000/")
-        print(req.json())
+    def __repr__(self) -> str:
+        return self.data["username"]
 
     def login(self):
         req = requests.post("http://127.0.0.1:8000/login", data=self.data)
         if req.status_code == 200:
-            self.LOGGER.info("Authenication success!")
             token = req.json()
             self.headers = {"Authorization": f"Bearer {token['access_token']}"}
             self._is_logged_in = True
@@ -29,15 +23,14 @@ class UserAPI:
         else:
             return False
 
-    def make_auth_call(self):
-        "/document-scraped-data"
-        req = requests.get(self.url + "/document-scraped-data", headers=self.headers)
-        self.LOGGER.info(f"{req}")
+    def dummy_call(self):
+        """For testing async"""
+        req = requests.get("http://127.0.0.1:8000/")
         if req.status_code == 200:
-            print(req.json())
+            return True
 
-    def start_scraper(self):
-        req = requests.post(f"{self.url}/run-scraper-service", headers=self.headers)
-
+    def make_auth_call(self):
+        """For testing authentication system"""
+        req = requests.get(self.url + "/document-scraped-data", headers=self.headers)
         if req.status_code == 200:
             print(req.json())

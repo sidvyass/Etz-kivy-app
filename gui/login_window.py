@@ -5,7 +5,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from controllers.user_login_controller import LoginController
 import asyncio
-from gui.base_logger import getlogger
+from controllers.base_logger import getlogger
 
 KV = """
 <LoginWindow>:
@@ -78,10 +78,7 @@ class LoginWindow(Screen):
 
     async def login(self):
         self.ids.loading_spinner.active = True
-        bool_value = await self.controller.authenticate(
+        await self.controller.authenticate(
             self.ids.username_field.text, self.ids.password_field.text
         )
         self.ids.loading_spinner.active = False
-        if bool_value == False:
-            # TODO: change this to false and render a box upon incorrect attempt
-            pass
