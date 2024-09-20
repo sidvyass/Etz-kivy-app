@@ -7,8 +7,10 @@ from kivymd.uix.button import MDRaisedButton
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from gui.login_window import LoginWindow
 from controllers.user_login_controller import LoginController
-from controllers.main_controller import MainWindowController
-from gui.main_window import HomeWindow
+from controllers.esis_auto_controller import MainWindowController
+from gui.esis_auto_window import EsisAutoGUI
+from gui.home_window import HomeWindow
+from controllers.home_controller import HomeController
 import asyncio
 
 
@@ -21,7 +23,8 @@ class EsisAutoApp(MDApp):
         controller = LoginController(self)
         view = LoginWindow(controller=controller)
 
-        self.theme_cls.primary_palette = "BlueGray"
+        self.theme_cls.primary_palette = "Red"
+        self.theme_cls.theme_style = "Dark"
 
         self.screen_manager.add_widget(view)
 
@@ -35,11 +38,13 @@ class EsisAutoApp(MDApp):
 
         # NOTE: this is called by the login controller
 
+        # main_controller = HomeController(self, user)
+        # my_view = HomeWindow(main_controller)
         main_controller = MainWindowController(self, user)
-        main_view = HomeWindow(main_controller)
+        main_view = EsisAutoGUI(main_controller)
 
         self.screen_manager.add_widget(main_view)
-        self.screen_manager.current = "main_window"
+        self.screen_manager.current = "esis_auto_gui"
 
     # *********** small notifications **************
 

@@ -10,7 +10,6 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.clock import Clock
 from kivy.utils import get_color_from_hex
 from gui.base_logger import getlogger
-from controllers.main_controller import MainWindowController
 
 
 KV = """
@@ -22,8 +21,8 @@ KV = """
         text: 'Navigation Drawer'
         font_style: 'Subtitle1'
 
-<HomeWindow>:
-    name: 'main_window'
+<EsisAutoGui>:
+    name: 'esis_auto_gui'
 
     BoxLayout:
         orientation: 'vertical'
@@ -133,21 +132,23 @@ KV = """
 Builder.load_string(KV)
 
 
-class HomeWindow(Screen):
+class EsisAutoGUI(Screen):
     controller = ObjectProperty()
     table_size_bound = False  # Flag to check if size event is bound
 
     def __init__(self, controller, **kwargs):
-        super(HomeWindow, self).__init__(**kwargs)
-        self.controller: MainWindowController = controller
-        self.create_table()
+        super(EsisAutoGUI, self).__init__(**kwargs)
+        self.controller = controller
         self.LOGGER = getlogger("home window")
-        Clock.schedule_interval(self.queue_update_scraper, 15)  # status LIGHT
+        self.create_table()
+        self.update_status_light = Clock.schedule_interval(
+            self.queue_update_scraper, 15
+        )  # status LIGHT
         self.queue_update_scraper()
-        Clock.schedule_interval(self.queue_update_documents, 60)
+        self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
         self.queue_update_documents()
 
-    def create_table(self, rows=[("Fetching Data...", "", "", "", "", "")]):
+    def create_table(self, rows=[("Fetching Data...", "", "", "", "", "", "")]):
         column_widths = [
             ("PO Number", dp(50)),
             ("CO Number", dp(25)),
@@ -155,17 +156,14 @@ class HomeWindow(Screen):
             ("Date", dp(50)),
             ("FilePath", dp(50)),  # This will act like a button (clickable text)
             ("FileName", dp(50)),
-            ("Description", dp(100)),
-
         ]
 
-        # Prepare row data with clickable text for FilePath column
         row_with_buttons = []
+        assert len(rows) >= 1
         for row in rows:
             file_path = row[4]
             file_button = f"[Open File]"  # Text that acts like a button
 
-            # Replace the FilePath column with the clickable text (file_button)
             new_row = (row[0], row[1], row[2], row[3], file_button, row[5])
             row_with_buttons.append(new_row)
 
@@ -177,18 +175,14 @@ class HomeWindow(Screen):
             row_data=row_with_buttons,
         )
 
-        # Clear existing widgets and add the new table
         self.ids.table_container.clear_widgets()
         self.ids.table_container.add_widget(self.data_tables)
 
-        # Add a row click event
         self.data_tables.bind(on_row_press=self.on_row_press)
 
     def on_row_press(self, instance_table, instance_row):
-        # Get the row data
         row_data = instance_row.table.recycle_data[instance_row.index]["text"]
 
-        # Check if the clicked row contains an "Open File" text in the file path column
         if "[Open File]" in row_data:
             file_path = row_data.split("[Open File]")[0].strip()  # Extract file path
             self.controller.open_file(file_path)
@@ -228,7 +222,7 @@ class HomeWindow(Screen):
         asyncio.create_task(self.start_scraper_update_gui())
 
     def on_logout_press(self):
-        self.controller.logout()
+        self.controller.logout(self)
 
 
 class ContentNavigationDrawer(MDBoxLayout):

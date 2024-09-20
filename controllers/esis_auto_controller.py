@@ -29,7 +29,6 @@ class MainWindowController:
                     f"User - {self.user.data['username']} got - {req.status}"
                 )
                 if req.status == 200:
-                    result = req.json()
                     self.app.show_notification("Done!", "Scraper is running on server!")
                     return True
                 else:
@@ -38,11 +37,13 @@ class MainWindowController:
                     )
                     return False
 
-    def logout(self):
+    def logout(self, window):
         # TODO: still need to clear up data
         req = requests.post(f"{self.user.url}/logout", headers=self.user.headers)
         if req.status_code == 200:
             self.LOGGER.info(f"Logged out user {self.user.data}")
+            window.update_status_light.cancel()
+            window.update_documents.cancel()
             self.app.screen_manager.current = "login_screen"
         else:
             self.LOGGER.error(f"server error")
@@ -69,6 +70,7 @@ class MainWindowController:
             ) as req:
                 if req.status == 200:
                     response = await req.json()
+                    self.LOGGER.info(response)
                     # TODO: need to parse the data and then send it back
                     home_window.create_table(rows=response["data"])
                     self.app.show_small_notification("Documents Updated!")
