@@ -89,3 +89,6 @@ class MainWindowController:
                 self.LOGGER.error(f"Could not open file - {self.user}")
         else:
             self.app.show_small_notification("Error in opening file")
+
+    def go_to_home(self):
+        self.app.screen_manager.current = "home_window"

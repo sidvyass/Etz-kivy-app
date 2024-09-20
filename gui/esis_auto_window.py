@@ -1,6 +1,4 @@
 import asyncio
-import os
-from kivymd.uix.button import MDFlatButton
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
@@ -26,26 +24,26 @@ KV = """
 
     BoxLayout:
         orientation: 'vertical'
+        padding: 20
+        spacing: 20
 
-        # Custom Top Navigation Bar
-        MDBoxLayout:
-            orientation: 'horizontal'
-            size_hint_y: None
-            height: dp(56)
-            md_bg_color: app.theme_cls.primary_color
-            padding: dp(10), 0
-            spacing: dp(10)
+        BoxLayout:
+            size_hint_y: 0.1
+            padding: [20, 10] 
+            canvas.before:
+                Color:
+                    rgba: 0.1, 0.1, 0.1, 1
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
 
-            # "Home" Label
-            MDLabel:
-                text: "Home"
-                font_style: "H6"
-                halign: "left"
-                valign: "center"
-                size_hint_x: None
-                width: dp(60)
-                color: 1, 1, 1, 1  # White text
-                pos_hint: {'center_y': 0.5}
+            MDIconButton:
+                icon: "home"
+                size_hint_y: 1
+                size_hint_x: 0.1
+                on_release: root.on_home_button_press()
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1  # White icon color
 
             # Expandable Widget to push the buttons to the right
             Widget:
@@ -75,7 +73,7 @@ KV = """
             MDFlatButton:
                 text: "Run Scraper"
                 text_color: 1, 1, 1, 1  # White text
-                md_bg_color: 0, 0.6, 0, 1  # Green background
+                md_bg_color: app.theme_cls.primary_color
                 on_release: root.on_button1_press()
                 size_hint: None, None
                 size: dp(100), dp(36)
@@ -115,7 +113,7 @@ KV = """
                     text: "Search"
                     size_hint_x: 0.2
                     on_release: root.on_search_button()
-                    md_bg_color: app.theme_cls.primary_color
+                    md_bg_color: 0, 0.6, 0, 1  # Green background
                     elevation: 0
 
             # Data Table Container
@@ -223,6 +221,9 @@ class EsisAutoGUI(Screen):
 
     def on_logout_press(self):
         self.controller.logout(self)
+
+    def on_home_button_press(self):
+        self.controller.go_to_home()
 
 
 class ContentNavigationDrawer(MDBoxLayout):

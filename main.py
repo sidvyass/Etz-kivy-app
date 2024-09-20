@@ -38,13 +38,15 @@ class EsisAutoApp(MDApp):
 
         # NOTE: this is called by the login controller
 
-        # main_controller = HomeController(self, user)
-        # my_view = HomeWindow(main_controller)
-        main_controller = MainWindowController(self, user)
-        main_view = EsisAutoGUI(main_controller)
+        home_window_controller = HomeController(self, user)
+        home_window = HomeWindow(home_window_controller)
+
+        esis_window_controller = MainWindowController(self, user)
+        main_view = EsisAutoGUI(esis_window_controller)
 
         self.screen_manager.add_widget(main_view)
-        self.screen_manager.current = "esis_auto_gui"
+        self.screen_manager.add_widget(home_window)
+        self.screen_manager.current = "home_window"
 
     # *********** small notifications **************
 

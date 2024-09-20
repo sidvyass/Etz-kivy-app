@@ -7,3 +7,6 @@ class HomeController:
         self.LOGGER = getlogger("MainWindow controller")
         self.app = app
         self.user = user
+
+    def go_to_esis_window(self):
+        self.app.screen_manager.current = "esis_auto_gui"

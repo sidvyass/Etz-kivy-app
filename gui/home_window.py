@@ -1,6 +1,5 @@
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
-
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 
@@ -10,8 +9,8 @@ KV = """
     name: 'home_window'
     BoxLayout:
         orientation: 'vertical'
-        padding: 20  # Adds padding around the entire layout
-        spacing: 20  # Adds spacing between elements
+        padding: 20
+        spacing: 20
 
         # First row (App Name and User ID)
         BoxLayout:
@@ -62,9 +61,10 @@ KV = """
                         pos: self.pos
 
                 MDFillRoundFlatButton:
-                    text: "Button 1"
+                    text: "ESIS Scraper"
                     size_hint_y: 0.25
                     size_hint_x: 1
+                    on_release: root.on_esis_scraper_press()
                     height: 50
                     md_bg_color: 0.1, 0.1, 0.1, 1  # Dark button background
                     text_color: 1, 1, 1, 1  # White text color
@@ -140,3 +140,6 @@ class HomeWindow(Screen):
         print("starting...")
         super(HomeWindow, self).__init__(**kwargs)
         self.controller = controller
+
+    def on_esis_scraper_press(self):
+        self.controller.go_to_esis_window()
