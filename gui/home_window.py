@@ -15,32 +15,58 @@ KV = """
         # First row (App Name and User ID)
         BoxLayout:
             size_hint_y: 0.1
-            padding: [20, 10]  # Adds padding between the labels
             canvas.before:
                 Color:
                     rgba: 0.1, 0.1, 0.1, 1  # Dark background for the header row
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
-            MDIconButton:
-                icon: "home"
-                size_hint_y: 1
+            BoxLayout:
+                orientation: 'horizontal'
+                spacing: 10  # Adds spacing between columns
                 size_hint_x: 0.1
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # White icon color
+                padding: [10, 10]
+                halign: "left"
+                canvas.before:
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                MDRaisedButton:
+                    text: "ESIS   "
+                    size_hint_y: 1
+                    size_hint_x: 0.025
+                    on_release: root.on_esis_scraper_press()
+                    text_color: 1, 1, 1, 1  # White text color
+
+                MDRaisedButton:
+                    text: "Button 2"
+                    size_hint_y: 1
+                    size_hint_x: 0.025
+                    height: 50
+                    text_color: 1, 1, 1, 1  # White text color
+
+                MDRaisedButton:
+                    text: "Button 3"
+                    size_hint_y: 1
+                    size_hint_x: 0.025
+                    text_color: 1, 1, 1, 1  # White text color
+
+                MDRaisedButton:
+                    text: "Button 4"
+                    size_hint_y: 1
+                    size_hint_x: 0.025
+                    text_color: 1, 1, 1, 1  # White text color
             MDLabel:
                 text: "Home"
                 halign: "center"
-                size_hint_x: 0.9
+                size_hint_x: 0.8
                 font_style: 'H4'
                 bold: True
                 color: 1, 1, 1, 1  # White color text
-            MDLabel:
-                text: "User_id"
-                halign: "right"
+            MDFlatButton:
+                text: "Logout"
+                size_hint_y: 1
                 size_hint_x: 0.1
-                font_style: 'Subtitle1'
-                color: 1, 1, 1, 1  # White color text
+                text_color: 1, 1, 1, 1  # White text
+                on_release: root.on_logout_press()
 
         # Three Columns Section
         BoxLayout:
@@ -60,38 +86,6 @@ KV = """
                         size: self.size
                         pos: self.pos
 
-                MDFillRoundFlatButton:
-                    text: "ESIS Scraper"
-                    size_hint_y: 0.25
-                    size_hint_x: 1
-                    on_release: root.on_esis_scraper_press()
-                    height: 50
-                    md_bg_color: 0.1, 0.1, 0.1, 1  # Dark button background
-                    text_color: 1, 1, 1, 1  # White text color
-
-                MDFillRoundFlatButton:
-                    text: "Button 2"
-                    size_hint_y: 0.25
-                    size_hint_x: 1
-                    height: 50
-                    md_bg_color: 0.1, 0.1, 0.1, 1  # Dark button background
-                    text_color: 1, 1, 1, 1  # White text color
-
-                MDFillRoundFlatButton:
-                    text: "Button 3"
-                    size_hint_y: 0.25
-                    size_hint_x: 1
-                    height: 50
-                    md_bg_color: 0.1, 0.1, 0.1, 1  # Dark button background
-                    text_color: 1, 1, 1, 1  # White text color
-
-                MDFillRoundFlatButton:
-                    text: "Button 4"
-                    size_hint_y: 0.25
-                    size_hint_x: 1
-                    height: 50
-                    md_bg_color: 0.1, 0.1, 0.1, 1  # Dark button background
-                    text_color: 1, 1, 1, 1  # White text color
 
             # Middle Column (Empty for now)
             BoxLayout:
@@ -143,3 +137,7 @@ class HomeWindow(Screen):
 
     def on_esis_scraper_press(self):
         self.controller.go_to_esis_window()
+
+    def on_logout_press(self):
+        # self.controller.logout()
+        pass
