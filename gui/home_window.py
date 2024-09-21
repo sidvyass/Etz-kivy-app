@@ -30,9 +30,10 @@ KV = """
                         pos: self.pos
 
                 MDRaisedButton:
-                    text: "ESIS   "
+                    text: " ESIS  "
                     size_hint_y: 1
                     size_hint_x: 0.025
+                    md_bg_color: 0.1, 0.3, 0.5, 1  # Muted blue button background
                     on_release: root.on_esis_scraper_press()
                     text_color: 1, 1, 1, 1  # White text color
 
@@ -41,18 +42,21 @@ KV = """
                     size_hint_y: 1
                     size_hint_x: 0.025
                     height: 50
+                    md_bg_color: 0.3, 0.5, 0.5, 1  # Muted teal secondary color
                     text_color: 1, 1, 1, 1  # White text color
 
                 MDRaisedButton:
                     text: "Button 3"
                     size_hint_y: 1
                     size_hint_x: 0.025
+                    md_bg_color: 0.9, 0.4, 0.3, 1  # Soft coral accent color
                     text_color: 1, 1, 1, 1  # White text color
 
                 MDRaisedButton:
                     text: "Button 4"
                     size_hint_y: 1
                     size_hint_x: 0.025
+                    md_bg_color: 0.2, 0.3, 0.4, 1  # Blue-gray button background
                     text_color: 1, 1, 1, 1  # White text color
             MDLabel:
                 text: "Home"
@@ -65,6 +69,7 @@ KV = """
                 text: "Logout"
                 size_hint_y: 1
                 size_hint_x: 0.1
+                md_bg_color: 0.2, 0.2, 0.2, 1  # Dark gray button background
                 text_color: 1, 1, 1, 1  # White text
                 on_release: root.on_logout_press()
 
@@ -139,5 +144,4 @@ class HomeWindow(Screen):
         self.controller.go_to_esis_window()
 
     def on_logout_press(self):
-        # self.controller.logout()
-        pass
+        self.controller.logout()

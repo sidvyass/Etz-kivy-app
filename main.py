@@ -11,6 +11,7 @@ from controllers.esis_auto_controller import MainWindowController
 from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
+from kivy.core.window import Window
 import asyncio
 
 
@@ -19,6 +20,7 @@ class EsisAutoApp(MDApp):
 
     def build(self):
         self.screen_manager = ScreenManager(transition=NoTransition())
+        Window.size = (1200, 900)
         # Initialize the Model, View, and Controller
         controller = LoginController(self)
         view = LoginWindow(controller=controller)

@@ -30,7 +30,6 @@ KV = """
             MDTextField:
                 id: username_field
                 hint_text: "Username"
-                icon_right: "account"
                 size_hint: None, None
                 size: dp(280), dp(48)  # Fixed size
                 pos_hint: {"center_x": 0.5}
@@ -41,7 +40,6 @@ KV = """
             MDTextField:
                 id: password_field
                 hint_text: "Password"
-                icon_right: "eye-off"
                 password: True
                 size_hint: None, None
                 size: dp(280), dp(48)  # Fixed size
@@ -92,3 +90,15 @@ class LoginWindow(Screen):
             self.ids.username_field.text, self.ids.password_field.text
         )
         self.ids.loading_spinner.active = False
+
+    def show_password(self):
+        password_field = self.ids.password_field
+        # Toggle the password visibility
+        if password_field.password:
+            password_field.password = False
+            password_field.icon_right = (
+                "eye"  # Change to "eye" icon to indicate password is visible
+            )
+        else:
+            password_field.password = True
+            password_field.icon_right = "eye-off"
