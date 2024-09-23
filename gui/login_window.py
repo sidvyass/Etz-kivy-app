@@ -1,9 +1,7 @@
-# gui/login_window.py
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from controllers.user_login_controller import LoginController
-import asyncio
 from controllers.base_logger import getlogger
 
 
@@ -55,7 +53,7 @@ KV = """
                 pos_hint: {"center_x": 0.5}
                 md_bg_color: 0.2, 0.2, 0.2, 1  # Dark button background
                 text_color: 1, 1, 1, 1  # White text color
-                on_release: root.start_login()
+                on_release: root.controller.authenticate(root.ids.username_field.text, root.ids.password_field.text, root)
 
         MDSpinner:
             id: loading_spinner
@@ -69,6 +67,8 @@ KV = """
 
 Builder.load_string(KV)
 
+# NOTE: the controller calls the load_main_window function once auth is successful
+
 
 class LoginWindow(Screen):
     controller = ObjectProperty()
@@ -77,28 +77,3 @@ class LoginWindow(Screen):
         super(LoginWindow, self).__init__(**kwargs)
         self.controller: LoginController = controller
         self.LOGGER = getlogger("Login GUI")
-
-    def hide_spinner(self):
-        self.ids.loading_spinner.active = False
-
-    def start_login(self):
-        asyncio.create_task(self.login())
-
-    async def login(self):
-        self.ids.loading_spinner.active = True
-        await self.controller.authenticate(
-            self.ids.username_field.text, self.ids.password_field.text
-        )
-        self.ids.loading_spinner.active = False
-
-    def show_password(self):
-        password_field = self.ids.password_field
-        # Toggle the password visibility
-        if password_field.password:
-            password_field.password = False
-            password_field.icon_right = (
-                "eye"  # Change to "eye" icon to indicate password is visible
-            )
-        else:
-            password_field.password = True
-            password_field.icon_right = "eye-off"

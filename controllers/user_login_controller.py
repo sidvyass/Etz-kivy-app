@@ -1,4 +1,3 @@
-import asyncio
 from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI
 
@@ -10,13 +9,15 @@ class LoginController:
         self.app = app
         self.LOGGER = getlogger("Login controller")
 
-    async def authenticate(self, username: str, password: str):
-        """Sends a request to the API to login. All auth requests are handled in User - using blocking requests library"""
+    def authenticate(self, username: str, password: str, login_window):
+        """Makes API request to authenticate. Calls the load_window function if successful"""
+        login_window.ids.loading_spinner.active = True
         self.user = UserAPI(username, password)
         self.LOGGER.info(f"{username} - Logging in...")
 
         is_logged_in = self.user.login()
         self.LOGGER.info(f"{username} - Login {is_logged_in}...")
+        login_window.ids.loading_spinner.active = False
         if is_logged_in:
             self.app.show_small_notification("Success...")
 
