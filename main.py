@@ -1,4 +1,4 @@
-# from kivy.app import App
+import requests
 from kivymd.app import MDApp
 from kivymd.uix.label import MDLabel
 from kivymd.uix.snackbar.snackbar import MDSnackbar
@@ -7,7 +7,7 @@ from kivymd.uix.button import MDRaisedButton
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from gui.login_window import LoginWindow
 from controllers.user_login_controller import LoginController
-from controllers.esis_auto_controller import MainWindowController
+from controllers.esis_auto_controller import EsisAutoController
 from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
@@ -37,23 +37,22 @@ class EsisAutoApp(MDApp):
         return self.screen_manager
 
     def load_main_window(self, user):
+        """This loads all the windows post login. Using self so that we can logout and stop all background jobs"""
+        self.user = user  # for logout
+        self.home_window_controller = HomeController(self, user)
+        self.home_window = HomeWindow(self.home_window_controller)
 
-        # NOTE: this is called by the login controller
+        self.esis_window_controller = EsisAutoController(self, user)
+        self.esis_view = EsisAutoGUI(self.esis_window_controller)
 
-        home_window_controller = HomeController(self, user)
-        home_window = HomeWindow(home_window_controller)
-
-        esis_window_controller = MainWindowController(self, user)
-        main_view = EsisAutoGUI(esis_window_controller)
-
-        self.screen_manager.add_widget(main_view)
-        self.screen_manager.add_widget(home_window)
+        self.screen_manager.add_widget(self.esis_view)
+        self.screen_manager.add_widget(self.home_window)
         self.screen_manager.current = "home_window"
 
     # *********** small notifications **************
 
     def show_small_notification(self, in_text: str):
-        """Helper function to show notification used by the controllers"""
+        """Function to show notification used by the controllers"""
         if self.current_snackbar:
             self.current_snackbar.bind(
                 on_dismiss=lambda *args: self.show_new_snackbar(in_text)
@@ -88,7 +87,13 @@ class EsisAutoApp(MDApp):
         """Only called after the show notification"""
         self.dialog.dismiss()  # type: ignore
 
-    # ******** END ***********
+    def logout(self):
+        req = requests.post(f"{self.user.url}/logout", headers=self.user.headers)
+        if req.status_code == 200:
+            self.esis_window_controller.cancel_background_tasks(self.esis_view)
+            self.screen_manager.current = "login_screen"
+        else:
+            print("nope...")
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ KV = """
                     size_hint_y: 1
                     size_hint_x: 0.025
                     md_bg_color: 0.1, 0.3, 0.5, 1  # Muted blue button background
-                    on_release: root.on_esis_scraper_press()
+                    on_release: root.controller.go_to_esis_window()
                     text_color: 1, 1, 1, 1  # White text color
 
                 MDRaisedButton:
@@ -71,7 +71,7 @@ KV = """
                 size_hint_x: 0.1
                 md_bg_color: 0.2, 0.2, 0.2, 1  # Dark gray button background
                 text_color: 1, 1, 1, 1  # White text
-                on_release: root.on_logout_press()
+                on_release: root.controller.main_app.logout()
 
         # Three Columns Section
         BoxLayout:
@@ -139,9 +139,3 @@ class HomeWindow(Screen):
         print("starting...")
         super(HomeWindow, self).__init__(**kwargs)
         self.controller = controller
-
-    def on_esis_scraper_press(self):
-        self.controller.go_to_esis_window()
-
-    def on_logout_press(self):
-        self.controller.logout()

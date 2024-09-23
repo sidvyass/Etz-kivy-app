@@ -41,7 +41,7 @@ KV = """
                 icon: "home"
                 size_hint_y: 1
                 size_hint_x: 0.1
-                on_release: root.on_home_button_press()
+                on_release: root.controller.go_to_home()
                 theme_text_color: "Custom"
                 text_color: 1, 1, 1, 1  # White icon color
 
@@ -84,7 +84,7 @@ KV = """
             MDFlatButton:
                 text: "Logout"
                 text_color: 1, 1, 1, 1  # White text
-                on_release: root.on_logout_press()
+                on_release: root.controller.main_app.logout()
                 size_hint: None, None
                 size: dp(80), dp(36)
                 pos_hint: {'center_y': 0.5}
@@ -139,10 +139,12 @@ class EsisAutoGUI(Screen):
         self.controller = controller
         self.LOGGER = getlogger("home window")
         self.create_table()
+        # NOTE:  This should directly link to the controller
         self.update_status_light = Clock.schedule_interval(
             self.queue_update_scraper, 15
         )  # status LIGHT
         self.queue_update_scraper()
+        # NOTE:  This should directly link to the controller
         self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
         self.queue_update_documents()
 
@@ -188,14 +190,7 @@ class EsisAutoGUI(Screen):
     # ---------- status LIGHT --------------------
 
     def queue_update_scraper(self, *args):
-        asyncio.create_task(self.async_start_update_scraper())
-
-    async def async_start_update_scraper(self):
-        result = await self.controller.get_scraper_status()
-        if result:
-            self.ids.status_light.text_color = get_color_from_hex("#00FF00")  # Green
-        else:
-            self.ids.status_light.text_color = get_color_from_hex("#FFFFFF")  # White
+        asyncio.create_task(self.controller.get_scraper_status(self))
 
     # -------------------------------------------
 
@@ -208,22 +203,12 @@ class EsisAutoGUI(Screen):
     # --------------- document display -------------
 
     def queue_update_documents(self, *args):
-        asyncio.create_task(self.async_start_update_document())
-
-    async def async_start_update_document(self):
-        """Our controller calls the create table statement to update"""
-        await self.controller.fetch_update_documents(self)
+        asyncio.create_task(self.controller.fetch_update_documents(self))
 
     # ------------------------------------------
 
     def on_button1_press(self):
         asyncio.create_task(self.start_scraper_update_gui())
-
-    def on_logout_press(self):
-        self.controller.logout(self)
-
-    def on_home_button_press(self):
-        self.controller.go_to_home()
 
 
 class ContentNavigationDrawer(MDBoxLayout):
