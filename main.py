@@ -6,7 +6,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDRaisedButton
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from gui.login_window import LoginWindow
-from controllers.user_login_controller import LoginController
+from controllers.login_controller import LoginController
 from controllers.esis_auto_controller import EsisAutoController
 from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
@@ -39,6 +39,7 @@ class EsisAutoApp(MDApp):
     def load_main_window(self, user):
         """This loads all the windows post login. Using self so that we can logout and stop all background jobs"""
         self.user = user  # for logout
+
         self.home_window_controller = HomeController(self, user)
         self.home_window = HomeWindow(self.home_window_controller)
 

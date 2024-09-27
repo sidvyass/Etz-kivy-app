@@ -1,7 +1,7 @@
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
-from controllers.user_login_controller import LoginController
+from controllers.login_controller import LoginController
 from controllers.base_logger import getlogger
 
 
@@ -63,11 +63,10 @@ KV = """
             active: False
             color: 1, 1, 1, 1  # White spinner color
 """
+# NOTE: the controller calls the load_main_window function once auth is successful
 
 
 Builder.load_string(KV)
-
-# NOTE: the controller calls the load_main_window function once auth is successful
 
 
 class LoginWindow(Screen):
@@ -75,5 +74,5 @@ class LoginWindow(Screen):
 
     def __init__(self, controller, **kwargs):
         super(LoginWindow, self).__init__(**kwargs)
-        self.controller: LoginController = controller
+        self.controller = controller
         self.LOGGER = getlogger("Login GUI")

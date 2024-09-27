@@ -74,7 +74,7 @@ KV = """
                 text: "Run Scraper"
                 text_color: 1, 1, 1, 1  # White text
                 md_bg_color: app.theme_cls.primary_color
-                on_release: root.on_button1_press()
+                on_release: root.start_scraper_on_server()
                 size_hint: None, None
                 size: dp(100), dp(36)
                 pos_hint: {'center_y': 0.5}
@@ -192,14 +192,6 @@ class EsisAutoGUI(Screen):
     def queue_update_scraper(self, *args):
         asyncio.create_task(self.controller.get_scraper_status(self))
 
-    # -------------------------------------------
-
-    async def start_scraper_update_gui(self):
-        """This just sends a requst to activate the scraper"""
-        response = await self.controller.start_scraper_on_server()
-        if response:
-            self.ids.status_light.text_color = get_color_from_hex("#00FF00")  # Green
-
     # --------------- document display -------------
 
     def queue_update_documents(self, *args):
@@ -207,8 +199,8 @@ class EsisAutoGUI(Screen):
 
     # ------------------------------------------
 
-    def on_button1_press(self):
-        asyncio.create_task(self.start_scraper_update_gui())
+    def start_scraper_on_server(self, *args):
+        asyncio.create_task(self.controller.start_scraper_on_server())
 
 
 class ContentNavigationDrawer(MDBoxLayout):
