@@ -1,184 +1,128 @@
-from kivy.clock import Clock
+from kivy.properties import ListProperty
+from kivy.uix.screenmanager import Screen
 from kivy.lang import Builder
-from kivymd.app import MDApp
-from kivy.metrics import dp
-from kivymd.uix.datatables import MDDataTable
-from kivy.core.window import Window
+from kivymd.uix.menu import MDDropdownMenu
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
+from kivy.properties import BooleanProperty
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
 KV = """
-<EmailWindow>:
-    name: 'email_window'
+<SelectableLabel>:
+    canvas.before:
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0.1, 0.1, 0.1, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    BoxLayout:
+<EmailWindowGui>:
+    name: 'email_gui'
+
+    MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(20)
+        canvas.before:
+            Color:
+                rgba: 0.1, 0.1, 0.1, 1  # Dark background
 
-        # First Row - Heading
-        BoxLayout:
-            size_hint_y: 0.1
-            padding: [20, 10]
-            canvas.before:
-                Color:
-                    rgba: 0.1, 0.1, 0.1, 1
-                Rectangle:
-                    size: self.size
-                    pos: self.pos
+        # Search bar and buttons
+        MDBoxLayout:
+            orientation: 'horizontal'
+            padding: 10
+            spacing: 10
+            size_hint_y: 0.08
+            height: dp(50)  # Fixed height for the search bar
 
-            MDLabel:
-                text: "Auto Email"
-                halign: "center"
-                valign: "middle"
-                size_hint_x: 1
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # White text color
-
-        # Second Row - Selection Box, Search Bar, Search Button
-        BoxLayout:
-            orientation: "horizontal"
-            size_hint_y: 0.1
-            padding: dp(10)
-            spacing: dp(10)
+            MDTextField:
+                hint_text: "Search"
 
             MDDropDownItem:
-                id: selection_box
-                text: "Select Type"
-                size_hint_x: 0.3
-                on_release: app.open_menu()
-
-            MDTextField:
-                id: search_field
-                hint_text: "Search"
-                mode: "rectangle"
-                size_hint_x: 0.5
+                id: type_dropdown
+                text: 'Type'
+                size_hint_x: 0.1
+                on_release: root.open_type_selection_dropdown()
 
             MDRaisedButton:
-                text: "Search"
-                size_hint_x: 0.2
-                on_release: app.search()
+                text: 'Search'
+                size_hint_x: 0.4
+                on_release: root.search()
 
-        # Third Row - Data Table Container (if needed)
-        ScrollView:
-            size_hint_y: 0.4
-            do_scroll_x: True
-            do_scroll_y: False
-            AnchorLayout:
-                id: table_container
-                size_hint_x: 1
-                size_hint_y: 1
-
-        # Fourth Row - Attachments and Quantity
-        BoxLayout:
-            orientation: "horizontal"
-            size_hint_y: 0.2
-            padding: dp(10)
-            spacing: dp(10)
-
-            MDTextField:
-                hint_text: "Other Attachments"
-                mode: "rectangle"
-                size_hint_x: 0.3
-
-            MDTextField:
-                hint_text: "Finish Attachments"
-                mode: "rectangle"
-                size_hint_x: 0.3
-
-            MDTextField:
-                hint_text: "Item Quantity"
-                mode: "rectangle"
-                size_hint_x: 0.3
-
-        # Fifth Row - Preview and Send Email Buttons
-        BoxLayout:
-            orientation: "horizontal"
-            size_hint_y: 0.1
-            padding: dp(10)
-            spacing: dp(10)
-
-            MDRaisedButton:
-                text: "Preview Email"
-                size_hint_x: 0.5
-                on_release: app.preview_email()
-
-            MDRaisedButton:
-                text: "Send Email"
-                size_hint_x: 0.5
-                on_release: app.send_email()
-
-        # Drag-and-Drop Label to Show Dropped Files
-        Label:
-            id: drop_label
-            text: "Drag and drop files here"
-            size_hint_y: 0.1
-            halign: "center"
+        RecycleView:
+            viewclass: 'SelectableLabel'
+            data: [{'text': str(x)} for x in root.data_items]
+            size_hint_y: 0.8 
+            SelectableRecycleGridLayout:
+                cols: 2
+                default_size: None, dp(26)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+                multiselect: False
 """
 
 
-class EmailWindow(MDApp):
-    def build(self):
-        # Load the KV string and return the root widget
-        root = Builder.load_string(KV)
-        self.theme_cls.theme_style = "Dark"
+Builder.load_string(KV)
 
-        # Schedule the table creation after build
-        Clock.schedule_once(self.create_table, 0)
 
-        # Bind drag and drop functionality
-        Window.bind(on_dropfile=self._on_file_drop)
+class SelectableRecycleGridLayout(
+    FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout
+):
+    """Adds selection and focus behavior to the view."""
 
-        return root
 
-    def create_table(self, *args, rows=[("Fetching Data...", "", "", "", "", "", "")]):
-        column_widths = [
-            ("PO Number", dp(50)),
-            ("CO Number", dp(25)),
-            ("Type of CO", dp(50)),
-            ("Date", dp(50)),
-            ("FilePath", dp(50)),  # This will act like a button (clickable text)
-            ("FileName", dp(50)),
+class SelectableLabel(RecycleDataViewBehavior, Label):
+    """Add selection support to the Label"""
+
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+
+    def refresh_view_attrs(self, rv, index, data):
+        """Catch and handle the view changes"""
+        self.index = index
+        return super(SelectableLabel, self).refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):
+        """Add selection on touch down"""
+        if super(SelectableLabel, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            return self.parent.select_with_touch(self.index, touch)
+
+    def apply_selection(self, rv, index, is_selected):
+        """Respond to the selection of items in the view."""
+        self.selected = is_selected
+        if is_selected:
+            print("selection changed to {0}".format(rv.data[index]))
+        else:
+            print("selection removed for {0}".format(rv.data[index]))
+
+
+class EmailWindowGui(Screen):
+    data_items = ListProperty([])
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.data_items = [{"text": str(x)} for x in range(100)]
+
+    def open_type_selection_dropdown(self):
+        # TODO: figure out how to close this upon selection
+        items = [
+            {
+                "text": "RFQ",
+                "on_release": lambda x=f"RFQ": self.ids.type_dropdown.set_item(x),
+            },
+            {
+                "text": "Item",
+                "on_release": lambda x=f"Item": self.ids.type_dropdown.set_item(x),
+            },
         ]
-
-        row_with_buttons = []
-        assert len(rows) >= 1
-        for row in rows:
-            file_path = row[4]
-            file_button = f"[Open File]"  # Text that acts like a button
-
-            new_row = (row[0], row[1], row[2], row[3], file_button, row[5])
-            row_with_buttons.append(new_row)
-
-        self.data_tables = MDDataTable(
-            size_hint=(1, 1),
-            use_pagination=True,
-            check=True,
-            column_data=column_widths,
-            row_data=row_with_buttons,
-        )
-
-        # Now self.ids is available because the root widget is returned from build()
-        self.root.ids.table_container.add_widget(self.data_tables)
-
-    def _on_file_drop(self, window, file_path):
-        # Convert byte string to a regular string (Python 3)
-        file_path = file_path.decode("utf-8")
-
-        # Display the dropped file in the label
-        self.root.ids.drop_label.text = f"File dropped: {file_path}"
-
-    def open_menu(self):
-        pass
+        MDDropdownMenu(caller=self.ids.type_dropdown, items=items).open()
 
     def search(self):
+        # NOTE: probably a controller call
         pass
-
-    def preview_email(self):
-        pass
-
-    def send_email(self):
-        pass
-
-
-if __name__ == "__main__":
-    EmailWindow().run()

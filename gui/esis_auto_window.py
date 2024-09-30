@@ -135,7 +135,7 @@ class EsisAutoGUI(Screen):
     table_size_bound = False  # Flag to check if size event is bound
 
     def __init__(self, controller, **kwargs):
-        super(EsisAutoGUI, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.controller = controller
         self.LOGGER = getlogger("home window")
         self.create_table()
