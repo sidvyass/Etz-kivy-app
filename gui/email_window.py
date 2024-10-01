@@ -3,6 +3,7 @@ from kivy.lang import Builder
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import ImageLeftWidget, OneLineAvatarListItem, TwoLineListItem
 from plyer import filechooser
+import asyncio
 
 
 KV = """
@@ -24,7 +25,9 @@ KV = """
             height: dp(50)  # Fixed height for the search bar
 
             MDTextField:
+                id: search_field
                 hint_text: "Search"
+                mode: "rectangle"
 
             MDDropDownItem:
                 id: type_dropdown
@@ -35,7 +38,7 @@ KV = """
             MDRaisedButton:
                 text: 'Search'
                 size_hint_x: 0.4
-                on_release: root.controller.search(root)
+                on_release: root.search()
 
         MDScrollView:
             size_hint_y: 0.5  # MAIN HINT
@@ -78,7 +81,7 @@ KV = """
                     text_color: 1, 1, 1, 1 
                     size_hint_x: 1
                     md_bg_color: app.theme_cls.primary_color
-                    on_release: root.choose_files()
+                    on_release: root.choose_files('files_uploaded')
                     valign: 'top'
                     halign: 'center'
 
@@ -98,7 +101,7 @@ KV = """
                     halign: 'center'
 
                 MDLabel:
-                    id: files_uploaded
+                    id: files_uploaded_1
                     text: "No files selected"
                     size_hint_x: 1 
                     valign: 'center'
@@ -109,7 +112,7 @@ KV = """
                     text_color: 1, 1, 1, 1 
                     size_hint_x: 1
                     md_bg_color: app.theme_cls.primary_color
-                    on_release: root.choose_files()
+                    on_release: root.choose_files('files_uploaded_1')
                     valign: 'top'
                     halign: 'center'
 
@@ -146,15 +149,23 @@ KV = """
 Builder.load_string(KV)
 
 
+class SelectedResult(OneLineAvatarListItem):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.ids._lbl_primary.halign = "center"
+        self.ids._lbl_primary.font_size = "20sp"
+        self.ids._lbl_primary.bold = True
+
+
 class SearchResultItem(OneLineAvatarListItem):
-    def __init__(self, filepath, controller, *args, **kwargs):
+    def __init__(self, filepath, parent_ref, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_widget(ImageLeftWidget(source=filepath))
-        self.parent_controller = controller
+        self.parent_ref = parent_ref
 
     def on_release(self):
         # TODO: controller call
-        print(f"pressed {self.text}")
+        self.parent_ref.on_search_selection(self.text)
 
 
 class EmailWindowGui(Screen):
@@ -178,16 +189,33 @@ class EmailWindowGui(Screen):
         MDDropdownMenu(caller=self.ids.type_dropdown, items=items).open()
 
     def search(self):
-        # TODO: format the string so that all results are equally spaced
-        for x in range(10):
+        # TODO: add a check to see if both fields are filled
+        search_value = self.ids.search_field.text
+        search_type = self.ids.type_dropdown.current_item
+        self.ids.selection_list.clear_widgets()
+        asyncio.create_task(self._start_search(search_type, search_value))
+
+    async def _start_search(self, search_type, search_value):
+        values = await self.controller.on_search_button_press(
+            search_value, search_type, self
+        )
+        for val in values:
             self.ids.selection_list.add_widget(
                 SearchResultItem(
                     filepath=r"C:\PythonProjects\placeholder-image.jpg",
-                    controller=self.controller,
-                    text=f"{x}",
+                    parent_ref=self,
+                    text=f"{val}",
                     secondary_text="number 2",
                 )
             )
 
-    def choose_files(self):
+    def choose_files(self, id):
         path = filechooser.open_file(title="Select file")  # Type: ignore
+        self.controller.on_file_upload(path, id, self)
+
+    def on_search_selection(self, rfq_or_item_selection):
+        self.controller.update_email_type(rfq_or_item_selection)
+        self.ids.selection_list.clear_widgets()
+        self.ids.selection_list.add_widget(
+            SelectedResult(text=rfq_or_item_selection.split(":")[0])
+        )
