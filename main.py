@@ -12,6 +12,7 @@ from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
 from gui.email_window import EmailWindowGui
+from controllers.email_controller import EmailController
 from kivy.core.window import Window
 import asyncio
 
@@ -26,7 +27,8 @@ class EsisAutoApp(MDApp):
         # controller = LoginController(self)
         # view = LoginWindow(controller=controller)
 
-        view = EmailWindowGui()
+        controller = EmailController(self)
+        view = EmailWindowGui(controller)
 
         self.theme_cls.primary_palette = "Red"
         self.theme_cls.theme_style = "Dark"

@@ -1,24 +1,11 @@
-from kivy.properties import ListProperty
 from kivy.uix.screenmanager import Screen
 from kivy.lang import Builder
 from kivymd.uix.menu import MDDropdownMenu
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label
-from kivy.properties import BooleanProperty
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
-from kivy.uix.behaviors import FocusBehavior
-from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivymd.uix.list import ImageLeftWidget, OneLineAvatarListItem, TwoLineListItem
+from plyer import filechooser
+
 
 KV = """
-<SelectableLabel>:
-    canvas.before:
-        Color:
-            rgba: (.0, 0.9, .1, .3) if self.selected else (0.1, 0.1, 0.1, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
 <EmailWindowGui>:
     name: 'email_gui'
 
@@ -26,14 +13,14 @@ KV = """
         orientation: 'vertical'
         canvas.before:
             Color:
-                rgba: 0.1, 0.1, 0.1, 1  # Dark background
+                rgba: 0.1, 0.1, 0.1, 1 
 
         # Search bar and buttons
         MDBoxLayout:
             orientation: 'horizontal'
             padding: 10
             spacing: 10
-            size_hint_y: 0.08
+            size_hint_y: 0.08  # MAIN HINT
             height: dp(50)  # Fixed height for the search bar
 
             MDTextField:
@@ -48,66 +35,133 @@ KV = """
             MDRaisedButton:
                 text: 'Search'
                 size_hint_x: 0.4
-                on_release: root.search()
+                on_release: root.controller.search(root)
 
-        RecycleView:
-            viewclass: 'SelectableLabel'
-            data: [{'text': str(x)} for x in root.data_items]
-            size_hint_y: 0.8 
-            SelectableRecycleGridLayout:
-                cols: 2
-                default_size: None, dp(26)
-                default_size_hint: 1, None
-                size_hint_y: None
-                height: self.minimum_height
+        MDScrollView:
+            size_hint_y: 0.5  # MAIN HINT
+            do_scroll_y: True
+
+            MDSelectionList:
+                id: selection_list
+                selected_mode: True
+
+        BoxLayout:
+            orientation: 'horizontal'
+            padding: 10
+            spacing: 10
+            size_hint_y: 0.2  # MAIN HINT
+
+            # first file upload section
+            BoxLayout:
                 orientation: 'vertical'
-                multiselect: False
+                padding: 10
+                size_hint_x: 0.5
+                size_hint_y: 1
+
+                MDLabel:
+                    text: "Upload Files"
+                    size_hint_y: 0.2
+                    size_hint_x: 1
+                    font_style: 'H5'
+                    valign: 'top'
+                    halign: 'center'
+
+                MDLabel:
+                    id: files_uploaded
+                    text: "No files selected"
+                    size_hint_x: 1 
+                    valign: 'center'
+                    halign: 'center'
+
+                MDFlatButton:
+                    text: "Select Files"
+                    text_color: 1, 1, 1, 1 
+                    size_hint_x: 1
+                    md_bg_color: app.theme_cls.primary_color
+                    on_release: root.choose_files()
+                    valign: 'top'
+                    halign: 'center'
+
+            # 2nd file chooser
+            BoxLayout:
+                orientation: 'vertical'
+                padding: 10
+                size_hint_x: 0.5
+                size_hint_y: 1
+
+                MDLabel:
+                    text: "Upload Files"
+                    size_hint_y: 0.2
+                    size_hint_x: 1
+                    font_style: 'H5'
+                    valign: 'top'
+                    halign: 'center'
+
+                MDLabel:
+                    id: files_uploaded
+                    text: "No files selected"
+                    size_hint_x: 1 
+                    valign: 'center'
+                    halign: 'center'
+
+                MDFlatButton:
+                    text: "Select Files"
+                    text_color: 1, 1, 1, 1 
+                    size_hint_x: 1
+                    md_bg_color: app.theme_cls.primary_color
+                    on_release: root.choose_files()
+                    valign: 'top'
+                    halign: 'center'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            padding: 10
+            size_hint_y: 0.1
+            spacing: 10
+
+            MDFlatButton:
+                text: "Send Mails"
+                text_color: 1, 1, 1, 1 
+                size_hint_x: 0.25
+                md_bg_color: app.theme_cls.primary_color
+                on_release: root.controller.send_mail(root)
+
+            MDFlatButton:
+                text: "Preview Mail"
+                text_color: 1, 1, 1, 1 
+                size_hint_x: 0.25
+                md_bg_color: app.theme_cls.primary_color
+                on_release: root.controller.preview_emails(root)
+
+            MDFlatButton:
+                text: "btn 3"
+                text_color: 1, 1, 1, 1 
+                size_hint_x: 0.25
+                md_bg_color: app.theme_cls.primary_color
+                on_release: root.controller.preview_emails(root)  # TODO: placeholder
+
 """
 
 
 Builder.load_string(KV)
 
 
-class SelectableRecycleGridLayout(
-    FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout
-):
-    """Adds selection and focus behavior to the view."""
+class SearchResultItem(OneLineAvatarListItem):
+    def __init__(self, filepath, controller, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_widget(ImageLeftWidget(source=filepath))
+        self.parent_controller = controller
 
-
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    """Add selection support to the Label"""
-
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        """Catch and handle the view changes"""
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(rv, index, data)
-
-    def on_touch_down(self, touch):
-        """Add selection on touch down"""
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        """Respond to the selection of items in the view."""
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
+    def on_release(self):
+        # TODO: controller call
+        print(f"pressed {self.text}")
 
 
 class EmailWindowGui(Screen):
-    data_items = ListProperty([])
 
-    def __init__(self, **kwargs):
+    def __init__(self, controller, **kwargs):
         super().__init__(**kwargs)
-        self.data_items = [{"text": str(x)} for x in range(100)]
+        self.controller = controller
 
     def open_type_selection_dropdown(self):
         # TODO: figure out how to close this upon selection
@@ -124,5 +178,16 @@ class EmailWindowGui(Screen):
         MDDropdownMenu(caller=self.ids.type_dropdown, items=items).open()
 
     def search(self):
-        # NOTE: probably a controller call
-        pass
+        # TODO: format the string so that all results are equally spaced
+        for x in range(10):
+            self.ids.selection_list.add_widget(
+                SearchResultItem(
+                    filepath=r"C:\PythonProjects\placeholder-image.jpg",
+                    controller=self.controller,
+                    text=f"{x}",
+                    secondary_text="number 2",
+                )
+            )
+
+    def choose_files(self):
+        path = filechooser.open_file(title="Select file")  # Type: ignore
