@@ -1,8 +1,19 @@
+import kivymd
 from kivy.uix.screenmanager import Screen
+from kivy.uix.popup import Popup
+from kivy.clock import Clock
 from kivy.lang import Builder
 from kivymd.uix.menu import MDDropdownMenu
-from kivymd.uix.list import ImageLeftWidget, OneLineAvatarListItem, TwoLineListItem
+from kivymd.uix.list import (
+    ImageLeftWidget,
+    OneLineAvatarListItem,
+    OneLineListItem,
+    TwoLineListItem,
+)
 from plyer import filechooser
+
+# TODO: comment this out when running
+from controllers.email_controller import EmailController
 import asyncio
 
 
@@ -39,6 +50,7 @@ KV = """
                 text: 'Search'
                 size_hint_x: 0.4
                 on_release: root.search()
+                md_bg_color: 0.2, 0.2, 0.2, 1
 
         MDScrollView:
             size_hint_y: 0.5  # MAIN HINT
@@ -62,7 +74,7 @@ KV = """
                 size_hint_y: 1
 
                 MDLabel:
-                    text: "Upload Files"
+                    text: "Finish Attachments"
                     size_hint_y: 0.2
                     size_hint_x: 1
                     font_style: 'H5'
@@ -70,7 +82,7 @@ KV = """
                     halign: 'center'
 
                 MDLabel:
-                    id: files_uploaded
+                    id: finish_attachments
                     text: "No files selected"
                     size_hint_x: 1 
                     valign: 'center'
@@ -80,8 +92,8 @@ KV = """
                     text: "Select Files"
                     text_color: 1, 1, 1, 1 
                     size_hint_x: 1
-                    md_bg_color: app.theme_cls.primary_color
-                    on_release: root.choose_files('files_uploaded')
+                    md_bg_color: 0.2, 0.2, 0.2, 1
+                    on_release: root.choose_files('finish_attachments')
                     valign: 'top'
                     halign: 'center'
 
@@ -93,7 +105,7 @@ KV = """
                 size_hint_y: 1
 
                 MDLabel:
-                    text: "Upload Files"
+                    text: "Other Documents"
                     size_hint_y: 0.2
                     size_hint_x: 1
                     font_style: 'H5'
@@ -101,7 +113,7 @@ KV = """
                     halign: 'center'
 
                 MDLabel:
-                    id: files_uploaded_1
+                    id: other_attachments
                     text: "No files selected"
                     size_hint_x: 1 
                     valign: 'center'
@@ -111,38 +123,128 @@ KV = """
                     text: "Select Files"
                     text_color: 1, 1, 1, 1 
                     size_hint_x: 1
-                    md_bg_color: app.theme_cls.primary_color
-                    on_release: root.choose_files('files_uploaded_1')
+                    md_bg_color: 0.2, 0.2, 0.2, 1
+                    on_release: root.choose_files('other_attachments')
                     valign: 'top'
                     halign: 'center'
 
         BoxLayout:
             orientation: 'horizontal'
             padding: 10
-            size_hint_y: 0.1
+            size_hint_y: 0.22  # MAIN HINT
             spacing: 10
 
             MDFlatButton:
                 text: "Send Mails"
                 text_color: 1, 1, 1, 1 
                 size_hint_x: 0.25
-                md_bg_color: app.theme_cls.primary_color
+                size_hint_y: 1
+                md_bg_color: 0.2, 0.2, 0.2, 1
                 on_release: root.controller.send_mail(root)
 
             MDFlatButton:
-                text: "Preview Mail"
+                text: "Email Recipients"
                 text_color: 1, 1, 1, 1 
                 size_hint_x: 0.25
-                md_bg_color: app.theme_cls.primary_color
-                on_release: root.controller.preview_emails(root)
+                size_hint_y: 1
+                md_bg_color: 0.2, 0.2, 0.2, 1
+                on_release: root.open_popup_emailids()
 
             MDFlatButton:
-                text: "btn 3"
+                text: "Email Body"
                 text_color: 1, 1, 1, 1 
                 size_hint_x: 0.25
-                md_bg_color: app.theme_cls.primary_color
-                on_release: root.controller.preview_emails(root)  # TODO: placeholder
+                size_hint_y: 1
+                md_bg_color: 0.2, 0.2, 0.2, 1
+                on_release: root.open_email_body()
 
+<EmailRecipientListPopup>:
+    title: "Email Recipients"
+    size_hint: 0.8, 0.8
+    BoxLayout:
+        size_hint: 1, 1
+        orientation: 'vertical'
+        padding: 10
+        spacing: 10
+
+        MDScrollView:
+            size_hint_y: 0.8  # MAIN HINT
+            do_scroll_y: True
+
+            MDSelectionList:
+                id: email_list_box
+                selected_mode: True
+
+        BoxLayout:
+            size_hint_y: 0.2
+            orientation: 'horizontal'
+            padding: 10
+            spacing: 10
+
+            MDFlatButton:
+                text: "Save"
+                size_hint_x: 0.3
+                size_hint_y: 1
+                text_color: 1, 1, 1, 1 
+                md_bg_color: 0.2, 0.2, 0.2, 1
+                on_release: root.dismiss()
+
+            MDFlatButton:
+                text: "Delete"
+                size_hint_x: 0.3
+                size_hint_y: 1
+                text_color: 1, 1, 1, 1 
+                md_bg_color: 0.2, 0.2, 0.2, 1
+                on_release: root.delete_emails()
+
+            BoxLayout:
+                size_hint_x: 0.3
+                orientation: 'vertical'
+                spacing: 5
+
+                MDTextField:
+                    id: new_email_id
+                    hint_text: 'example@mailid'
+                    valign: "top"
+
+                MDFlatButton:
+                    text: "Add"
+                    size_hint_x: 1 
+                    size_hint_y: 0.5
+                    text_color: 1, 1, 1, 1 
+                    md_bg_color: 0.2, 0.2, 0.2, 1
+                    on_release: root.add_email()
+
+<EmailPreview>:
+    title: "Email Preview"
+    size_hint: 0.8, 0.8
+    BoxLayout:
+        size_hint: 1, 1
+        orientation: 'vertical'
+        padding: 10
+        spacing: 10
+
+        MDScrollView:
+            size_hint_y: 0.95  # MAIN HINT
+            do_scroll_y: True
+
+            TextInput:
+                id: email_body
+                text: root.get_text()
+                multiline: True
+
+        BoxLayout:
+            size_hint_y: 0.05
+            orientation: 'horizontal'
+
+            MDFlatButton:
+                text: "Save"
+                halign: "center"
+                size_hint_y: 1
+                text_color: 1, 1, 1, 1 
+                md_bg_color: 0.2, 0.2, 0.2, 1
+                on_release: root.save_text()
+    
 """
 
 
@@ -150,6 +252,10 @@ Builder.load_string(KV)
 
 
 class SelectedResult(OneLineAvatarListItem):
+    """
+    Widget for when the user makes a selection
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.ids._lbl_primary.halign = "center"
@@ -157,7 +263,14 @@ class SelectedResult(OneLineAvatarListItem):
         self.ids._lbl_primary.bold = True
 
 
-class SearchResultItem(OneLineAvatarListItem):
+# TODO: make this recycle view
+class ResultItem(OneLineAvatarListItem):
+    """
+    Widget for displaying search results in the ScrollView
+
+    NOTE: Painfully fucking slow
+    """
+
     def __init__(self, filepath, parent_ref, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_widget(ImageLeftWidget(source=filepath))
@@ -168,11 +281,59 @@ class SearchResultItem(OneLineAvatarListItem):
         self.parent_ref.on_search_selection(self.text)
 
 
+class EmailRecipientListPopup(Popup):
+    """
+    Popup to review and edit E-mail IDs
+
+    """
+
+    def __init__(self, email_list: list, **kwargs) -> None:
+        super().__init__(**kwargs)
+        for email in email_list:
+            self.ids.email_list_box.add_widget(OneLineListItem(text=f"{email}"))
+
+    def add_email(self):
+        if self.ids.new_email_id.text:
+            self.ids.email_list_box.add_widget(
+                OneLineListItem(text=f"{self.ids.new_email_id.text}")
+            )
+            self.ids.new_email_id.text = ""
+
+    def delete_emails(self):
+        selected_items = self.ids.email_list_box.get_selected_list_items()
+        for s in selected_items:
+            self.ids.email_list_box.remove_widget(s)
+
+    def on_dismiss(self, *args):
+        pass
+
+
+class EmailPreview(Popup):
+    """
+    [TODO:description]
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    def get_text(self):
+        return "Trial"
+
+    # TODO: need to have a callback here
+    def save_text(self):
+        text = self.ids.email_body.text
+        self.dismiss()
+
+
 class EmailWindowGui(Screen):
 
     def __init__(self, controller, **kwargs):
         super().__init__(**kwargs)
-        self.controller = controller
+        self.controller: EmailController = controller
+        Clock.schedule_once(self.one_time_background_tasks)
+
+    def one_time_background_tasks(self, *args):
+        asyncio.create_task(self.controller.get_email_groups())
 
     def open_type_selection_dropdown(self):
         # TODO: figure out how to close this upon selection
@@ -189,19 +350,28 @@ class EmailWindowGui(Screen):
         MDDropdownMenu(caller=self.ids.type_dropdown, items=items).open()
 
     def search(self):
+        """
+        Search button on press event
+        Gathers search_value, search_type and pushes controller async search to event loop.
+        """
         # TODO: add a check to see if both fields are filled
         search_value = self.ids.search_field.text
         search_type = self.ids.type_dropdown.current_item
         self.ids.selection_list.clear_widgets()
         asyncio.create_task(self._start_search(search_type, search_value))
 
-    async def _start_search(self, search_type, search_value):
-        values = await self.controller.on_search_button_press(
-            search_value, search_type, self
-        )
+    async def _start_search(self, search_type: str, search_value: str):
+        """
+        Search and update results async function to push to event loop by self.search.
+
+        :param search_type [TODO:type]: [TODO:description]
+        :param search_value [TODO:type]: [TODO:description]
+        """
+        values = await self.controller.on_search_button_press(search_value, search_type)
+        print("starting widget creation...")
         for val in values:
             self.ids.selection_list.add_widget(
-                SearchResultItem(
+                ResultItem(
                     filepath=r"C:\PythonProjects\placeholder-image.jpg",
                     parent_ref=self,
                     text=f"{val}",
@@ -213,9 +383,28 @@ class EmailWindowGui(Screen):
         path = filechooser.open_file(title="Select file")  # Type: ignore
         self.controller.on_file_upload(path, id, self)
 
-    def on_search_selection(self, rfq_or_item_selection):
-        self.controller.update_email_type(rfq_or_item_selection)
+    def on_search_selection(self, rfq_or_item_selection: str):
+        """
+        Event for SearchResultItem (list item in display box).
+        Bound to on_press for the SearchResultItem widget.
+
+        :param rfq_or_item_selection str: The pk: value string in SearchResultItem.
+        """
+        rfq_or_item_selection = rfq_or_item_selection.split(":")[0]  # PK
+
+        self.controller.on_search_selection(
+            rfq_or_item_selection, self.ids.type_dropdown.current_item
+        )  # NOTE: might not need current_item: see self.search type in controller
         self.ids.selection_list.clear_widgets()
-        self.ids.selection_list.add_widget(
-            SelectedResult(text=rfq_or_item_selection.split(":")[0])
-        )
+        self.ids.selection_list.add_widget(SelectedResult(text=rfq_or_item_selection))
+
+    def open_popup_emailids(self):
+        email_list = self.controller.get_email_list()
+        if len(email_list) > 1:
+            EmailRecipientListPopup(email_list).open()
+        else:
+            # TODO: notify the user that the emails are still being updated
+            pass
+
+    def open_email_body(self):
+        EmailPreview().open()
