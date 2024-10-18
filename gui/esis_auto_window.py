@@ -1,5 +1,6 @@
 import asyncio
 from kivy.lang import Builder
+from kivymd.uix.button import MDFlatButton
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.metrics import dp
@@ -148,23 +149,40 @@ class EsisAutoGUI(Screen):
         self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
         self.queue_update_documents()
 
-    def create_table(self, rows=[("Fetching Data...", "", "", "", "", "", "")]):
+    def create_table(
+        self, rows=[("Fetching Data...", "", "", "", "", "", "", "", "", "", "")]
+    ):
+        print(rows)
         column_widths = [
-            ("PO Number", dp(50)),
+            ("PO Number", dp(30)),
             ("CO Number", dp(25)),
-            ("Type of CO", dp(50)),
-            ("Date", dp(50)),
-            ("FilePath", dp(50)),  # This will act like a button (clickable text)
-            ("FileName", dp(50)),
+            ("CO Reason", dp(25)),
+            ("CO Date", dp(30)),
+            ("FileName", dp(100)),  # very IMP
+            ("MT CreateDate", dp(100)),
+            ("MT ShippingAddress", dp(100)),
+            ("Open Details", dp(30)),  # This will act like a button (clickable text)
+            ("Open File", dp(30)),  # This will act like a button (clickable text)
+            ("Approval", dp(30)),
+            ("Discard", dp(30)),
         ]
 
         row_with_buttons = []
         assert len(rows) >= 1
-        for row in rows:
-            file_path = row[4]
-            file_button = f"[Open File]"  # Text that acts like a button
-
-            new_row = (row[0], row[1], row[2], row[3], file_button, row[5])
+        for idx, row in enumerate(rows):
+            new_row = (
+                row[0],
+                row[1],
+                row[2],
+                row[3].split(" ")[0],
+                row[4],
+                row[5],
+                row[6],
+                "[[OPEN DETAILS]]",
+                "[[OPEN FILE]]",
+                "[[APPROVE]]",
+                "[[DISCARD]]",
+            )
             row_with_buttons.append(new_row)
 
         self.data_tables = MDDataTable(
@@ -182,10 +200,18 @@ class EsisAutoGUI(Screen):
 
     def on_row_press(self, instance_table, instance_row):
         row_data = instance_row.table.recycle_data[instance_row.index]["text"]
-
-        if "[Open File]" in row_data:
-            file_path = row_data.split("[Open File]")[0].strip()  # Extract file path
-            self.controller.open_file(file_path)
+        pressed_row_index = instance_row.index // len(self.data_tables.column_data)
+        pressed_row_data = self.data_tables.row_data[pressed_row_index]
+        if "[[APPROVE]]" == row_data:
+            asyncio.create_task(
+                self.controller.approve_document(pressed_row_data, self)
+            )
+        elif "[[DISCARD]]" == row_data:
+            asyncio.create_task(
+                self.controller.discard_document(pressed_row_data, self)
+            )
+        elif "[[OPEN FILE]]" == row_data:
+            self.controller.open_file(pressed_row_data)
 
     # ---------- status LIGHT --------------------
 
