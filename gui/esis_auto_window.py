@@ -212,6 +212,8 @@ class EsisAutoGUI(Screen):
             )
         elif "[[OPEN FILE]]" == row_data:
             self.controller.open_file(pressed_row_data)
+        elif "[[OPEN DETAILS]]" == row_data:
+            self.controller.open_details(pressed_row_data)
 
     # ---------- status LIGHT --------------------
 

@@ -1,4 +1,13 @@
 import urllib.parse
+from kivy.core.window import Window
+from kivy.metrics import dp
+from kivymd.uix.datatables import MDDataTable
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
 import os
 from gui.esis_auto_window import EsisAutoGUI
 from kivy.utils import get_color_from_hex
@@ -173,6 +182,149 @@ class EsisAutoController:
                     response = await req.json()
                     self.LOGGER.info(response)
                     self.main_app.show_small_notification(f"{response}")
+
+    def open_details(self, row_filename):
+        doc_details = self.documents[row_filename[4]]
+
+        po_number = doc_details.get("po_number", "N/A")
+        co_seq_number = doc_details.get("co_seq_number", "N/A")
+        co_reason = doc_details.get("co_reason", "N/A")
+        co_date = doc_details.get("co_date", "N/A")
+        mt_data = doc_details.get("MT", {})
+        file_data = doc_details.get("File Data", {})
+
+        # Filter out non-line-number keys (e.g., 'Sales Order Number')
+        mt_line_numbers = set(
+            key for key, value in mt_data.items() if isinstance(value, dict)
+        )
+        file_line_numbers = set(file_data.keys())
+
+        # Create a set of all valid line numbers from both File Data and MT
+        line_numbers = file_line_numbers | mt_line_numbers
+
+        # Prepare the data for the table
+        table_data = []
+        for line_number in sorted(line_numbers):
+            file_line = file_data.get(line_number, {})
+            mt_line = mt_data.get(line_number, {})
+
+            # Extract data from File Data
+            file_qty = str(file_line.get("qty", "N/A"))
+            file_price = str(file_line.get("price", "N/A"))
+            file_uom = str(file_line.get("uom", "N/A"))
+            file_total = str(file_line.get("total", "N/A"))
+
+            # Extract data from MT
+            if isinstance(mt_line, dict):
+                mt_part_number = str(mt_line.get("Part_number", "N/A"))
+                mt_qty_ordered = str(mt_line.get("Quantity Ordered", "N/A"))
+                mt_qty_shipped = str(mt_line.get("Quantity Shipped", "N/A"))
+                mt_status = str(mt_line.get("Status", "N/A"))
+                mt_next_due_date = str(mt_line.get("Next Due Date", "N/A"))
+                mt_next_promise_date = str(mt_line.get("Next Promise Date", "N/A"))
+            else:
+                mt_part_number = "N/A"
+                mt_qty_ordered = "N/A"
+                mt_qty_shipped = "N/A"
+                mt_status = "N/A"
+                mt_next_due_date = "N/A"
+                mt_next_promise_date = "N/A"
+
+            # Append the row data
+            table_data.append(
+                [
+                    line_number,
+                    file_qty,
+                    file_price,
+                    file_uom,
+                    file_total,
+                    mt_part_number,
+                    mt_qty_ordered,
+                    mt_qty_shipped,
+                    mt_status,
+                    mt_next_due_date,
+                    mt_next_promise_date,
+                ]
+            )
+
+        # Define the column headers
+        column_data = [
+            ("Line Number", dp(30)),
+            ("File Qty", dp(30)),
+            ("File Price", dp(30)),
+            ("File UOM", dp(30)),
+            ("File Total", dp(30)),
+            ("MT Part Number", dp(30)),
+            ("MT Qty Ordered", dp(30)),
+            ("MT Qty Shipped", dp(30)),
+            ("MT Status", dp(30)),
+            ("MT Next Due Date", dp(30)),
+            ("MT Next Promise Date", dp(30)),
+        ]
+
+        # Create the layout
+        layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+
+        # Add PO Information Section
+        info_layout = GridLayout(cols=2, padding=10, spacing=10, size_hint_y=None)
+        info_layout.bind(
+            minimum_height=info_layout.setter("height")
+        )  # Ensure height grows based on content
+
+        info_layout.add_widget(
+            Label(text="PO Number:", bold=True, size_hint_y=None, height=40)
+        )
+        info_layout.add_widget(Label(text=po_number, size_hint_y=None, height=40))
+
+        info_layout.add_widget(
+            Label(text="CO Sequence Number:", bold=True, size_hint_y=None, height=40)
+        )
+        info_layout.add_widget(Label(text=co_seq_number, size_hint_y=None, height=40))
+
+        info_layout.add_widget(
+            Label(text="CO Reason:", bold=True, size_hint_y=None, height=40)
+        )
+        info_layout.add_widget(Label(text=co_reason, size_hint_y=None, height=40))
+
+        info_layout.add_widget(
+            Label(text="CO Date:", bold=True, size_hint_y=None, height=40)
+        )
+        info_layout.add_widget(Label(text=co_date, size_hint_y=None, height=40))
+
+        # Add the info layout to a scrollview in case it's too long
+        info_scrollview = ScrollView(size_hint=(1, None), size=(Window.width, dp(200)))
+        info_scrollview.add_widget(info_layout)
+        layout.add_widget(info_scrollview)
+
+        # Create the MDDataTable
+        table = MDDataTable(
+            size_hint=(1, None),
+            height=dp(400),  # Adjust height as needed
+            use_pagination=True,
+            column_data=column_data,
+            row_data=table_data,
+            check=False,
+        )
+
+        # Create a ScrollView for the table
+        table_scroll = ScrollView()
+        table_scroll.add_widget(table)
+
+        # Add the table scrollview to the layout
+        layout.add_widget(table_scroll)
+
+        # Add a close button
+        close_button = Button(text="Close", size_hint_y=None, height=50)
+        layout.add_widget(close_button)
+
+        # Create the popup
+        popup = Popup(title="Document Details", content=layout, size_hint=(0.9, 0.9))
+
+        # Bind the close button to dismiss the popup
+        close_button.bind(on_release=popup.dismiss)
+
+        # Open the popup
+        popup.open()
 
     def go_to_home(self):
         self.main_app.screen_manager.current = "home_window"
