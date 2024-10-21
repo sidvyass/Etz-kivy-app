@@ -11,9 +11,7 @@ from kivy.uix.scrollview import ScrollView
 import os
 from gui.esis_auto_window import EsisAutoGUI
 from kivy.utils import get_color_from_hex
-import requests
-import json
-from controllers.base_logger import getlogger  # type: ignore
+from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI
 import aiohttp
 
@@ -22,14 +20,14 @@ class EsisAutoController:
     """The controller handles interactions between the view and the model."""
 
     def __init__(self, app):
-
         self.LOGGER = getlogger("MainWindow controller")
         self.main_app = app
         self.user = UserAPI("60009", "67220")
-        self.LOGGER.info(f"{self.user} is logged in")
 
     async def start_scraper_on_server(self):
-        """Function that calls the API to start the scraper"""
+        """
+        Makes a requst to the server to start the scraper. Updates on GUI when response.
+        """
         self.main_app.show_small_notification("Requested scraper to start...")
         self.LOGGER.info(
             f"{self.user.data['username']} requested to start the scraper, awaiting response..."
@@ -53,13 +51,17 @@ class EsisAutoController:
                     return False
 
     def cancel_background_tasks(self, esis_window):
+        """
+        Only run at when exiting the esis window.
+
+        :param esis_window ScreenKivy: Kivy UI instance to cancel clock
+        """
         # TODO: still need to clear up data
         esis_window.update_status_light.cancel()
         esis_window.update_documents.cancel()
 
     async def get_scraper_status(self, esis_window):
         """Gets data from the API endpoint"""
-        self.LOGGER.info("Getting scraper status...")
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"{self.user.url}/scraper-status", headers=self.user.headers
@@ -80,6 +82,11 @@ class EsisAutoController:
                     return False
 
     async def fetch_update_documents(self, esis_window: EsisAutoGUI):
+        """
+        Get the latest scraped documents from the server. Save it in self.documents class instance variable.
+
+        :param esis_window: instance of the window to build table UI.
+        """
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"{self.user.url}/document-scraped-data", headers=self.user.headers
@@ -88,8 +95,7 @@ class EsisAutoController:
                     self.documents = await req.json()
 
                     all_rows = []
-                    for key, value in self.documents.items():
-
+                    for key in self.documents.keys():
                         if "CreateDate" in self.documents[key]["MT"].keys():
 
                             create_date = self.documents[key]["MT"]["CreateDate"].split(
@@ -162,7 +168,7 @@ class EsisAutoController:
     async def discard_document(self, row_filename, esis_window):
         # show the notification bar with loading icon
         self.main_app.show_notification(
-            "Starting", f"Approving file: {row_filename[4]}"
+            "Starting", f"Discarding file: {row_filename[4]}"
         )
 
         async with aiohttp.ClientSession() as session:
@@ -184,6 +190,12 @@ class EsisAutoController:
                     self.main_app.show_small_notification(f"{response}")
 
     def open_details(self, row_filename):
+        """
+        Opens a popup with the details inside.
+
+        :param row_filename [TODO:type]: [TODO:description]
+        """
+
         doc_details = self.documents[row_filename[4]]
 
         po_number = doc_details.get("po_number", "N/A")
@@ -193,29 +205,25 @@ class EsisAutoController:
         mt_data = doc_details.get("MT", {})
         file_data = doc_details.get("File Data", {})
 
-        # Filter out non-line-number keys (e.g., 'Sales Order Number')
         mt_line_numbers = set(
             key for key, value in mt_data.items() if isinstance(value, dict)
         )
         file_line_numbers = set(file_data.keys())
 
-        # Create a set of all valid line numbers from both File Data and MT
         line_numbers = file_line_numbers | mt_line_numbers
 
-        # Prepare the data for the table
         table_data = []
         for line_number in sorted(line_numbers):
             file_line = file_data.get(line_number, {})
             mt_line = mt_data.get(line_number, {})
 
-            # Extract data from File Data
             file_qty = str(file_line.get("qty", "N/A"))
             file_price = str(file_line.get("price", "N/A"))
             file_uom = str(file_line.get("uom", "N/A"))
             file_total = str(file_line.get("total", "N/A"))
 
-            # Extract data from MT
             if isinstance(mt_line, dict):
+                # TODO: add qty demand
                 mt_part_number = str(mt_line.get("Part_number", "N/A"))
                 mt_qty_ordered = str(mt_line.get("Quantity Ordered", "N/A"))
                 mt_qty_shipped = str(mt_line.get("Quantity Shipped", "N/A"))
@@ -230,7 +238,6 @@ class EsisAutoController:
                 mt_next_due_date = "N/A"
                 mt_next_promise_date = "N/A"
 
-            # Append the row data
             table_data.append(
                 [
                     line_number,
@@ -247,7 +254,6 @@ class EsisAutoController:
                 ]
             )
 
-        # Define the column headers
         column_data = [
             ("Line Number", dp(30)),
             ("File Qty", dp(30)),
@@ -262,14 +268,10 @@ class EsisAutoController:
             ("MT Next Promise Date", dp(30)),
         ]
 
-        # Create the layout
         layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
-        # Add PO Information Section
         info_layout = GridLayout(cols=2, padding=10, spacing=10, size_hint_y=None)
-        info_layout.bind(
-            minimum_height=info_layout.setter("height")
-        )  # Ensure height grows based on content
+        info_layout.bind(minimum_height=info_layout.setter("height"))
 
         info_layout.add_widget(
             Label(text="PO Number:", bold=True, size_hint_y=None, height=40)
@@ -291,12 +293,10 @@ class EsisAutoController:
         )
         info_layout.add_widget(Label(text=co_date, size_hint_y=None, height=40))
 
-        # Add the info layout to a scrollview in case it's too long
         info_scrollview = ScrollView(size_hint=(1, None), size=(Window.width, dp(200)))
         info_scrollview.add_widget(info_layout)
         layout.add_widget(info_scrollview)
 
-        # Create the MDDataTable
         table = MDDataTable(
             size_hint=(1, None),
             height=dp(400),  # Adjust height as needed
@@ -306,24 +306,18 @@ class EsisAutoController:
             check=False,
         )
 
-        # Create a ScrollView for the table
         table_scroll = ScrollView()
         table_scroll.add_widget(table)
 
-        # Add the table scrollview to the layout
         layout.add_widget(table_scroll)
 
-        # Add a close button
         close_button = Button(text="Close", size_hint_y=None, height=50)
         layout.add_widget(close_button)
 
-        # Create the popup
         popup = Popup(title="Document Details", content=layout, size_hint=(0.9, 0.9))
 
-        # Bind the close button to dismiss the popup
         close_button.bind(on_release=popup.dismiss)
 
-        # Open the popup
         popup.open()
 
     def go_to_home(self):

@@ -1,24 +1,14 @@
 import asyncio
 from kivy.lang import Builder
-from kivymd.uix.button import MDFlatButton
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.metrics import dp
 from kivymd.uix.datatables import MDDataTable
-from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.clock import Clock
-from kivy.utils import get_color_from_hex
 from gui.base_logger import getlogger
 
 
 KV = """
-<ContentNavigationDrawer@MDBoxLayout>:
-    orientation: 'vertical'
-    padding: dp(10)
-    spacing: dp(10)
-    MDLabel:
-        text: 'Navigation Drawer'
-        font_style: 'Subtitle1'
 
 <EsisAutoGui>:
     name: 'esis_auto_gui'
@@ -140,27 +130,28 @@ class EsisAutoGUI(Screen):
         self.controller = controller
         self.LOGGER = getlogger("home window")
         self.create_table()
-        # NOTE:  This should directly link to the controller
         self.update_status_light = Clock.schedule_interval(
             self.queue_update_scraper, 15
-        )  # status LIGHT
-        self.queue_update_scraper()
-        # NOTE:  This should directly link to the controller
+        )
         self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
         self.queue_update_documents()
 
     def create_table(
         self, rows=[("Fetching Data...", "", "", "", "", "", "", "", "", "", "")]
     ):
-        print(rows)
+        """
+        Creates a table with row values. 1 < Rows < 11.
+
+        :param rows List[Tuple]: List with Tuples of rows.
+        """
         column_widths = [
-            ("PO Number", dp(30)),
-            ("CO Number", dp(25)),
-            ("CO Reason", dp(25)),
+            ("PO Number", dp(50)),
+            ("CO Number", dp(30)),
+            ("CO Reason", dp(20)),
             ("CO Date", dp(30)),
             ("FileName", dp(100)),  # very IMP
-            ("MT CreateDate", dp(100)),
-            ("MT ShippingAddress", dp(100)),
+            ("MT CreateDate", dp(30)),
+            ("MT ShippingAddress", dp(50)),
             ("Open Details", dp(30)),  # This will act like a button (clickable text)
             ("Open File", dp(30)),  # This will act like a button (clickable text)
             ("Approval", dp(30)),
@@ -169,7 +160,7 @@ class EsisAutoGUI(Screen):
 
         row_with_buttons = []
         assert len(rows) >= 1
-        for idx, row in enumerate(rows):
+        for row in rows:
             new_row = (
                 row[0],
                 row[1],
@@ -199,6 +190,12 @@ class EsisAutoGUI(Screen):
         self.data_tables.bind(on_row_press=self.on_row_press)
 
     def on_row_press(self, instance_table, instance_row):
+        """
+        Simulates a button press on row. Buttons are represented by strings.
+
+        :param instance_table [TODO:type]: kivy reqs
+        :param instance_row [TODO:type]: kivy reqs
+        """
         row_data = instance_row.table.recycle_data[instance_row.index]["text"]
         pressed_row_index = instance_row.index // len(self.data_tables.column_data)
         pressed_row_data = self.data_tables.row_data[pressed_row_index]
@@ -213,9 +210,14 @@ class EsisAutoGUI(Screen):
         elif "[[OPEN FILE]]" == row_data:
             self.controller.open_file(pressed_row_data)
         elif "[[OPEN DETAILS]]" == row_data:
+            self.controller.main_app.show_notification(
+                "Opening", "Opening file details..."
+            )
             self.controller.open_details(pressed_row_data)
 
-    # ---------- status LIGHT --------------------
+    # ---------- WRAPPERS --------------------
+    # To be compatible with clock in kivy we need to wrap async funcs.
+    # NOTE: You cannot do this in any other way. ITS DUMB.
 
     def queue_update_scraper(self, *args):
         asyncio.create_task(self.controller.get_scraper_status(self))
@@ -225,11 +227,7 @@ class EsisAutoGUI(Screen):
     def queue_update_documents(self, *args):
         asyncio.create_task(self.controller.fetch_update_documents(self))
 
-    # ------------------------------------------
+    # ----------------Request for scraper to run-----
 
     def start_scraper_on_server(self, *args):
         asyncio.create_task(self.controller.start_scraper_on_server())
-
-
-class ContentNavigationDrawer(MDBoxLayout):
-    pass

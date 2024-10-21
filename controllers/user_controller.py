@@ -1,5 +1,10 @@
 import requests
 import urllib.parse
+import json
+
+
+# TODO: need to display bad server error to the user.
+# Have some way to estabilish a connection and then start the app.
 
 
 class UserAPI:
@@ -25,32 +30,24 @@ class UserAPI:
         else:
             return False
 
-    def dummy_call(self):
-        """For testing async"""
+    def test_endpoint_get(self, url_val):
+        req = requests.get(
+            self.url + url_val,
+            headers=self.headers,
+        )
+        response = json.dumps(req.json(), indent=3)
+        print(response)
+
+    def test_endpoint_post(self, url_val):
         req = requests.post(
-            "http://127.0.0.1:8000/get_items_from_rfq",
-            json={"rfq_num": "5052"},
+            self.url + f"{url_val}",
             headers=self.headers,
         )
-
-        print(req.json())
-
-    def make_auth_call(self):
-        """For testing authentication system"""
-        req = requests.get(self.url + "/document-scraped-data", headers=self.headers)
-        if req.status_code == 200:
-            print(req.json())
-
-    def test_endpoint(self, key):
-        encoded_key = urllib.parse.quote(key)
-        req = requests.put(
-            self.url + f"/document-scraped-data/approve/{encoded_key}",
-            headers=self.headers,
-        )
-        print(req.json())
+        response = json.dumps(req.json(), indent=3)
+        print(response)
 
 
 if __name__ == "__main__":
     u = UserAPI("60009", "67220")
     u.login()
-    u.test_endpoint("PO_4502305447_CN#0001_10-15-2024.rtf")
+    u.test_endpoint_get("/document-scraped-data")
