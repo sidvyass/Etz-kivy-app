@@ -19,10 +19,15 @@ import aiohttp
 class EsisAutoController:
     """The controller handles interactions between the view and the model."""
 
-    def __init__(self, app):
+    def __init__(self, app, user: UserAPI):
         self.LOGGER = getlogger("MainWindow controller")
         self.main_app = app
-        self.user = UserAPI("60009", "67220")
+        # self.user = UserAPI("60009", "67220")
+
+        # for prod
+        self.user = user
+
+        self.LOGGER.info(self.user)
 
     async def start_scraper_on_server(self):
         """
