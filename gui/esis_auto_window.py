@@ -1,5 +1,8 @@
 import asyncio
 from kivy.lang import Builder
+from kivymd.uix.spinner import MDSpinner
+from kivy.uix.modalview import ModalView
+from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.metrics import dp
@@ -121,6 +124,16 @@ KV = """
 Builder.load_string(KV)
 
 
+class LoadingModal(ModalView):
+    """
+    Just to show a loading icon to the user when doing compute intensive tasks.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_widget(Label(text="Loading...", font_size="20sp"))
+
+
 class EsisAutoGUI(Screen):
     controller = ObjectProperty()
     table_size_bound = False  # Flag to check if size event is bound
@@ -136,6 +149,8 @@ class EsisAutoGUI(Screen):
         self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
         self.queue_update_documents()
 
+        self.loading_modal = LoadingModal(size_hint=(0.3, 0.3))
+
     def create_table(
         self, rows=[("Fetching Data...", "", "", "", "", "", "", "", "", "", "")]
     ):
@@ -145,11 +160,11 @@ class EsisAutoGUI(Screen):
         :param rows List[Tuple]: List with Tuples of rows.
         """
         column_widths = [
-            ("PO Number", dp(50)),
-            ("CO Number", dp(30)),
-            ("CO Reason", dp(20)),
+            ("PO #", dp(30)),
+            ("CO #", dp(15)),
+            ("CO Reason", dp(40)),
             ("CO Date", dp(30)),
-            ("FileName", dp(100)),  # very IMP
+            ("FileName", dp(30)),  # very IMP
             ("MT CreateDate", dp(30)),
             ("MT ShippingAddress", dp(50)),
             ("Open Details", dp(30)),  # This will act like a button (clickable text)
@@ -196,6 +211,7 @@ class EsisAutoGUI(Screen):
         :param instance_table [TODO:type]: kivy reqs
         :param instance_row [TODO:type]: kivy reqs
         """
+
         row_data = instance_row.table.recycle_data[instance_row.index]["text"]
         pressed_row_index = instance_row.index // len(self.data_tables.column_data)
         pressed_row_data = self.data_tables.row_data[pressed_row_index]
@@ -210,7 +226,10 @@ class EsisAutoGUI(Screen):
         elif "[[OPEN FILE]]" == row_data:
             self.controller.open_file(pressed_row_data)
         elif "[[OPEN DETAILS]]" == row_data:
-            self.controller.open_details(pressed_row_data)
+            self.loading_modal.open()
+            asyncio.create_task(
+                self.controller.open_details(pressed_row_data, self.loading_modal)
+            )
 
     # ---------- WRAPPERS --------------------
     # To be compatible with clock in kivy we need to wrap async funcs.

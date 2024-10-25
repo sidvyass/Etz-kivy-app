@@ -5,6 +5,7 @@ from kivymd.uix.snackbar.snackbar import MDSnackbar
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDRaisedButton
 from kivy.uix.screenmanager import ScreenManager, NoTransition
+from controllers.user_controller import UserAPI
 from gui.login_window import LoginWindow
 from controllers.login_controller import LoginController
 from controllers.esis_auto_controller import EsisAutoController
@@ -22,8 +23,11 @@ class EsisAutoApp(MDApp):
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
-        controller = LoginController(self)
-        view = LoginWindow(controller=controller)
+        # controller = LoginController(self)
+        # view = LoginWindow(controller=controller)
+
+        controller = EsisAutoController(self, UserAPI("60009", "67220"))
+        view = EsisAutoGUI(controller)
 
         self.theme_cls.primary_palette = "Red"
         self.theme_cls.theme_style = "Dark"
