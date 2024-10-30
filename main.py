@@ -1,9 +1,10 @@
+import logging
 import requests
 from kivymd.app import MDApp
 from kivymd.uix.label import MDLabel
 from kivymd.uix.snackbar.snackbar import MDSnackbar
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.button import MDButtonText
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from controllers.user_controller import UserAPI
 from gui.login_window import LoginWindow
@@ -14,12 +15,18 @@ from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
 from kivy.core.window import Window
 import asyncio
+from kivy.logger import Logger, LOG_LEVELS
 
 
 class EsisAutoApp(MDApp):
     dialog = None
 
     def build(self):
+        Logger.setLevel(LOG_LEVELS["warning"])
+
+        self.theme_cls.primary_palette = "Red"
+        self.theme_cls.theme_style = "Dark"
+
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
@@ -28,9 +35,6 @@ class EsisAutoApp(MDApp):
 
         controller = EsisAutoController(self, UserAPI("60009", "67220"))
         view = EsisAutoGUI(controller)
-
-        self.theme_cls.primary_palette = "Red"
-        self.theme_cls.theme_style = "Dark"
 
         self.screen_manager.add_widget(view)
 
@@ -87,8 +91,8 @@ class EsisAutoApp(MDApp):
             title=title,
             text=text,
             buttons=[
-                MDRaisedButton(text="OK", on_release=self.close_dialog),
-                MDRaisedButton(text="Cancel", on_release=self.close_dialog),
+                MDButtonText(text="OK", on_release=self.close_dialog),
+                MDButtonText(text="Cancel", on_release=self.close_dialog),
             ],
         )
         self.dialog.open()

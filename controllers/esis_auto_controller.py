@@ -1,16 +1,14 @@
 import urllib.parse
-from pprint import pprint
-from kivymd.uix.label import MDLabel
 from kivy.core.window import Window
 from kivy.metrics import dp
-from kivymd.uix.datatables import MDDataTable
-from kivymd.uix.spinner import MDSpinner
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from gui.esis_auto_window import EsisAutoGUI
 from kivy.utils import get_color_from_hex
 from controllers.base_logger import getlogger
@@ -18,18 +16,35 @@ from controllers.user_controller import UserAPI
 import aiohttp
 import os
 import re
+from kivy.properties import StringProperty
+
+
+class DetailTableRow(BoxLayout):
+    line_number = StringProperty()
+    file_qty = StringProperty()
+    file_price = StringProperty()
+    file_uom = StringProperty()
+    file_total = StringProperty()
+    esis_date = StringProperty()
+    mt_part_number = StringProperty()
+    mt_qty_ordered = StringProperty()
+    mt_qty_shipped = StringProperty()
+    mt_status = StringProperty()
+    mt_next_due_date = StringProperty()
+    mt_next_promise_date = StringProperty()
 
 
 class EsisAutoController:
     """The controller handles interactions between the view and the model."""
 
     def __init__(self, app, user: UserAPI):
-        self.LOGGER = getlogger("MainWindow controller")
+        self.LOGGER = getlogger("Esis Auto")
         self.main_app = app
-        self.user = UserAPI("60009", "67220")
+        # self.user = UserAPI("60009", "67220")
+        self.user = user
+        self.user.login()
 
         # for prod
-        # self.user = user
 
         self.LOGGER.info(self.user)
 
@@ -104,6 +119,9 @@ class EsisAutoController:
                     self.documents = await req.json()
 
                     all_rows = []
+                    if not self.documents:
+                        return
+
                     for key in self.documents.keys():
                         document = self.documents[key]
                         headers = document.get("headers", {})
@@ -132,9 +150,11 @@ class EsisAutoController:
 
                     esis_window.create_table(rows=all_rows)
                     self.main_app.show_small_notification("Documents Updated!")
+
                 elif req.status == 401:
                     self.main_app.show_notification("Logged Out", "Please login again.")
                     self.main_app.logout()
+
                 else:
                     self.LOGGER.error(
                         f"Could not load documents, server returned {req.status}"
@@ -207,6 +227,9 @@ class EsisAutoController:
                     response = await req.json()
                     self.LOGGER.info(response)
                     self.main_app.show_small_notification(f"{response}")
+
+    def go_to_home(self):
+        self.main_app.screen_manager.current = "home_window"
 
     async def open_details(self, row_filename, spinner):
         """
@@ -285,36 +308,36 @@ class EsisAutoController:
 
             # Append the extracted data to the table data
             table_data.append(
-                [
-                    line_number,
-                    file_qty,
-                    file_price,
-                    file_uom,
-                    file_total,
-                    esis_date,  # Include ESIS Date here
-                    mt_part_number,
-                    mt_qty_ordered,
-                    mt_qty_shipped,
-                    mt_status,
-                    mt_next_due_date,
-                    mt_next_promise_date,
-                ]
+                {
+                    "line_number": line_number,
+                    "file_qty": file_qty,
+                    "file_price": file_price,
+                    "file_uom": file_uom,
+                    "file_total": file_total,
+                    "esis_date": esis_date,
+                    "mt_part_number": mt_part_number,
+                    "mt_qty_ordered": mt_qty_ordered,
+                    "mt_qty_shipped": mt_qty_shipped,
+                    "mt_status": mt_status,
+                    "mt_next_due_date": mt_next_due_date,
+                    "mt_next_promise_date": mt_next_promise_date,
+                }
             )
 
-        # Define the column headers and their widths
-        column_data = [
-            ("Line Number", dp(30)),
-            ("ESIS Qty", dp(50)),
-            ("ESIS Price", dp(50)),
-            ("ESIS UOM", dp(50)),
-            ("ESIS Total", dp(30)),
-            ("ESIS Date", dp(50)),  # Add ESIS Date column
-            ("MT Part Number", dp(30)),
-            ("MT Qty Ordered", dp(30)),
-            ("MT Qty Shipped", dp(30)),
-            ("MT Status", dp(30)),
-            ("MT Next Due Date", dp(30)),
-            ("MT Next Promise Date", dp(30)),
+        # Define the column headers
+        column_headers = [
+            "Line Number",
+            "ESIS Qty",
+            "ESIS Price",
+            "ESIS UOM",
+            "ESIS Total",
+            "ESIS Date",
+            "MT Part Number",
+            "MT Qty Ordered",
+            "MT Qty Shipped",
+            "MT Status",
+            "MT Next Due Date",
+            "MT Next Promise Date",
         ]
 
         # Create the layout for the popup
@@ -350,19 +373,72 @@ class EsisAutoController:
         info_scrollview.add_widget(info_layout)
         layout.add_widget(info_scrollview)
 
-        # Create the data table with the extracted data
-        table = MDDataTable(
-            size_hint=(1, None),
-            height=dp(400),  # Adjust height as needed
-            use_pagination=True,
-            column_data=column_data,
-            row_data=table_data,
-            check=False,
+        # Create the header row for the table
+        header_row = BoxLayout(
+            orientation="horizontal", size_hint_y=None, height=dp(30), spacing=dp(5)
         )
+        header_labels = [
+            {"text": h, "width": dp(80)} if i == 0 else {"text": h, "width": dp(60)}
+            for i, h in enumerate(column_headers)
+        ]
+        header_widths = [
+            dp(80),
+            dp(60),
+            dp(60),
+            dp(60),
+            dp(60),
+            dp(80),
+            dp(100),
+            dp(80),
+            dp(80),
+            dp(80),
+            dp(100),
+            dp(120),
+        ]
+        for i, header in enumerate(column_headers):
+            lbl = Label(
+                text=header,
+                bold=True,
+                size_hint_x=None,
+                width=header_widths[i],
+                halign="center",
+            )
+            header_row.add_widget(lbl)
 
-        # Add the data table to a scrollable view
-        table_scroll = ScrollView()
-        table_scroll.add_widget(table)
+        # Create the RecycleView
+        rv = RecycleView(size_hint=(1, 1), do_scroll_x=True)
+        rv.viewclass = "DetailTableRow"
+
+        # Define the RecycleBoxLayout
+        rv_layout = RecycleBoxLayout(
+            orientation="vertical",
+            default_size=(None, dp(30)),
+            default_size_hint=(None, None),
+            size_hint=(None, None),
+            width=sum(header_widths) + dp(5) * (len(header_widths) - 1),
+            height=dp(30) * len(table_data),
+        )
+        rv_layout.bind(minimum_height=rv_layout.setter("height"))
+        rv_layout.bind(minimum_width=rv_layout.setter("width"))
+
+        rv.add_widget(rv_layout)
+
+        rv.layout_manager = rv_layout
+
+        # Prepare data for the RecycleView
+        rv.data = table_data
+
+        # Create a container layout for the table
+        table_container = BoxLayout(orientation="vertical", size_hint=(None, None))
+        table_container.bind(minimum_height=table_container.setter("height"))
+        table_container.bind(minimum_width=table_container.setter("width"))
+        table_container.width = rv_layout.width
+        table_container.add_widget(header_row)
+        table_container.add_widget(rv)
+
+        # Add the table_container to a ScrollView
+        table_scroll = ScrollView(size_hint=(1, 1), do_scroll_x=True)
+        table_scroll.add_widget(table_container)
 
         layout.add_widget(table_scroll)
 
@@ -378,6 +454,3 @@ class EsisAutoController:
         spinner.dismiss()
 
         popup.open()
-
-    def go_to_home(self):
-        self.main_app.screen_manager.current = "home_window"

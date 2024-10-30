@@ -3,7 +3,6 @@ from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 
 # from controllers.login_controller import LoginController
-from controllers.base_logger import getlogger
 
 
 KV = """
@@ -76,4 +75,3 @@ class LoginWindow(Screen):
     def __init__(self, controller, **kwargs):
         super(LoginWindow, self).__init__(**kwargs)
         self.controller = controller
-        self.LOGGER = getlogger("Login GUI")

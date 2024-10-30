@@ -1,30 +1,31 @@
 import sys
 import loguru
-
-LOGGER = None
+import logging
 
 
 def getlogger(name: str = "DefaultName", level="DEBUG") -> loguru.logger:  # type: ignore
-    """Initialize logging for app returning logger."""
-    global LOGGER  # pylint: disable=global-statement
+    """
+    Initialize and return a logger instance with the specified name and level.
+    """
 
-    if LOGGER is None:
-        logobj = loguru.logger
-        logobj.remove()
-        logger_format = (
-            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-            f"{name} | "
-            "<level>{level: <8}</level> | "
-            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
-            "<level>{message}</level>"
-        )
-        logobj.add(
-            sys.stderr,
-            level=level,
-            format=logger_format,
-            colorize=None,
-            serialize=False,
-        )
-        LOGGER = logobj
+    logobj = loguru.logger.bind(name=name)
 
-    return LOGGER
+    logobj.remove()
+
+    logger_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "{extra[name]} | "
+        "<level>{level: <8}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+        "<level>{message}</level>"
+    )
+
+    logobj.add(
+        sys.stderr,
+        level=level,
+        format=logger_format,
+        colorize=True,
+        serialize=False,
+    )
+
+    return logobj

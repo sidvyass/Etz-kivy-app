@@ -21,7 +21,6 @@ class LoginController:
         if is_logged_in:
             self.app.show_small_notification("Success...")
 
-            # NOTE: we hand it off to the mainwindow by calling MAIN app's load function
-            self.app.load_main_window(self.user)
+            self.app.load_main_window(self.user)  # NOTE: hand off
         else:
             self.app.show_small_notification("Incorrect username or password")
