@@ -34,11 +34,11 @@ class EsisAutoApp(MDApp):
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
-        # controller = LoginController(self)
-        # view = LoginWindow(controller=controller)
+        controller = LoginController(self)
+        view = LoginWindow(controller=controller)
 
-        controller = EsisAutoController(self, UserAPI("60009", "67220"))
-        view = EsisAutoGUI(controller)
+        # controller = EsisAutoController(self, UserAPI("60009", "67220"))
+        # view = EsisAutoGUI(controller)
 
         self.screen_manager.add_widget(view)
 

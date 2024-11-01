@@ -27,41 +27,39 @@ KV = """
 
             MDTextField:
                 id: username_field
-                hint_text: "Username"
                 size_hint: None, None
                 size: dp(280), dp(48)  # Fixed size
                 pos_hint: {"center_x": 0.5}
-                line_color_normal: 1, 1, 1, 1  # White line color
                 text_color: 1, 1, 1, 1  # White text color
-                hint_text_color_normal: 0.7, 0.7, 0.7, 1  # Light grey hint text
+
+                MDTextFieldHintText:
+                    text: "User ID. Ex: 36154"
 
             MDTextField:
                 id: password_field
-                hint_text: "Password"
                 password: True
                 size_hint: None, None
                 size: dp(280), dp(48)  # Fixed size
                 pos_hint: {"center_x": 0.5}
-                line_color_normal: 1, 1, 1, 1  # White line color
                 text_color: 1, 1, 1, 1  # White text color
-                hint_text_color_normal: 0.7, 0.7, 0.7, 1  # Light grey hint text
 
-            MDRaisedButton:
-                text: "Login"
-                size_hint: None, None
+                MDTextFieldHintText:
+                    text: "Password"
+
+            MDButton:
+                id: search_button
+                style: "filled"
+                on_release: root.controller.authenticate(root.ids.username_field.text, root.ids.password_field.text, root)
                 size: dp(140), dp(48)  # Fixed size
                 pos_hint: {"center_x": 0.5}
+                theme_bg_color: "Custom"
                 md_bg_color: 0.2, 0.2, 0.2, 1  # Dark button background
-                text_color: 1, 1, 1, 1  # White text color
-                on_release: root.controller.authenticate(root.ids.username_field.text, root.ids.password_field.text, root)
 
-        MDSpinner:
-            id: loading_spinner
-            size_hint: None, None
-            size: dp(46), dp(46)
-            pos_hint: {"center_x": 0.5, "center_y": 0.3}
-            active: False
-            color: 1, 1, 1, 1  # White spinner color
+                MDButtonText:
+                    id: search_button_text
+                    text: "Login"
+                    theme_text_color: "Custom"
+                    text_color: "white"
 """
 # NOTE: the controller calls the load_main_window function once auth is successful
 

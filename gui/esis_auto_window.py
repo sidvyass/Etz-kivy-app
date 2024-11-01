@@ -43,6 +43,7 @@ KV = """
                 theme_text_color: "Custom"
                 text_color: 1, 1, 1, 1
 
+
             Widget:
                 size_hint_x: 1
 
@@ -63,19 +64,20 @@ KV = """
                     theme_text_color: "Custom"
                     text_color: "white"
 
-            MDButton:
-                style: "text"
-                on_release: root.controller.main_app.logout()
-                size_hint_x: None
-                width: dp(80)
-                height: dp(36)
-                pos_hint: {'center_y': 0.5}
-                padding: dp(5), dp(5)
+            MDIconButton:
+                icon: "cloud-upload"
+                size_hint_y: 1
+                size_hint_x: 0.1
+                on_release: root.controller.open_file_upload_popup()
+                text_color: 1, 1, 1, 1
 
-                MDButtonText:
-                    text: "Log out"
-                    theme_text_color: "Custom"
-                    text_color: "white"
+            MDIconButton:
+                on_release: root.controller.main_app.logout()
+                icon: "logout"
+                size_hint_y: 1
+                size_hint_x: 0.1
+                text_color: 1, 1, 1, 1
+
 
         # Search bar section
         BoxLayout:

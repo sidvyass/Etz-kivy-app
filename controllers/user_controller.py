@@ -1,5 +1,6 @@
 import requests
 import urllib.parse
+import os
 import json
 
 
@@ -28,7 +29,7 @@ class UserAPI:
             self._is_logged_in = True
             return True
         else:
-            return False
+            return False  # NOTE: DO NOT CHANGE
 
     def test_endpoint_get(self, url_val):
         req = requests.get(
@@ -38,16 +39,21 @@ class UserAPI:
         response = json.dumps(req.json(), indent=3)
         print(response)
 
-    def test_endpoint_post(self, url_val):
-        req = requests.post(
-            self.url + f"{url_val}",
-            headers=self.headers,
-        )
-        response = json.dumps(req.json(), indent=3)
-        print(response)
+    def test_endpoint_post(self, file_path):
+        print(f"{self.url}/document-scraped-data/upload_file")
+        with open(file_path, "rb") as file:
+            files = {"file": (os.path.basename(file_path), file)}
+            response = requests.post(
+                f"{self.url}/document-scraped-data/upload_file",
+                files=files,
+                headers=self.headers,
+            )
+            print(response.json())
+            if response.status_code == 200:
+                print("success")
 
 
 if __name__ == "__main__":
     u = UserAPI("60009", "67220")
     u.login()
-    u.test_endpoint_get("/document-scraped-data")
+    u.test_endpoint_post(r"C:\Users\svyas\Downloads\report (4) (1).rtf")

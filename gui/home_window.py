@@ -24,52 +24,75 @@ KV = """
                 size_hint_x: 0.1
                 padding: [10, 10]
                 halign: "left"
-                canvas.before:
-                    Rectangle:
-                        size: self.size
-                        pos: self.pos
 
-                MDRaisedButton:
-                    text: " ESIS  "
-                    size_hint_y: 1
-                    size_hint_x: 0.025
-                    md_bg_color: 0.1, 0.3, 0.5, 1  # Muted blue button background
+                MDButton:
+                    id: search_button
+                    style: "filled"
                     on_release: root.controller.go_to_esis_window()
-                    text_color: 1, 1, 1, 1  # White text color
-
-                MDRaisedButton:
-                    text: "Button 2"
                     size_hint_y: 1
                     size_hint_x: 0.025
                     height: 50
+                    theme_bg_color: "Custom"
+                    md_bg_color: 0.1, 0.3, 0.5, 1  # Muted blue button background
+
+                    MDButtonText:
+                        text: "ESIS"
+                        theme_text_color: "Custom"
+                        text_color: "white"
+
+                MDButton:
+                    style: "filled"
+                    size_hint_y: 1
+                    size_hint_x: 0.025
+                    height: 50
+                    theme_bg_color: "Custom"
                     md_bg_color: 0.3, 0.5, 0.5, 1  # Muted teal secondary color
                     text_color: 1, 1, 1, 1  # White text color
 
-                MDRaisedButton:
-                    text: "Button 3"
+                    MDButtonText:
+                        text: "Button 2"
+                        theme_text_color: "Custom"
+                        text_color: "white"
+
+                MDButton:
+                    style: "filled"
                     size_hint_y: 1
                     size_hint_x: 0.025
+                    height: 50
+                    theme_bg_color: "Custom"
                     md_bg_color: 0.9, 0.4, 0.3, 1  # Soft coral accent color
                     text_color: 1, 1, 1, 1  # White text color
 
-                MDRaisedButton:
-                    text: "Button 4"
+                    MDButtonText:
+                        text: "Button 3"
+                        theme_text_color: "Custom"
+                        text_color: "white"
+
+                MDButton:
+                    style: "filled"
                     size_hint_y: 1
                     size_hint_x: 0.025
+                    height: 50
+                    theme_bg_color: "Custom"
                     md_bg_color: 0.2, 0.3, 0.4, 1  # Blue-gray button background
                     text_color: 1, 1, 1, 1  # White text color
+
+                    MDButtonText:
+                        text: "Button 4"
+                        theme_text_color: "Custom"
+                        text_color: "white"
             MDLabel:
                 text: "Home"
                 halign: "center"
+                font_style: "Display"
                 size_hint_x: 0.8
-                font_style: 'H4'
                 bold: True
                 color: 1, 1, 1, 1  # White color text
-            MDFlatButton:
-                text: "Logout"
+
+            MDIconButton:
+                icon: "logout"
                 size_hint_y: 1
                 size_hint_x: 0.1
-                md_bg_color: 0.2, 0.2, 0.2, 1  # Dark gray button background
                 text_color: 1, 1, 1, 1  # White text
                 on_release: root.controller.main_app.logout()
 
@@ -106,7 +129,6 @@ KV = """
                     text: "Data/Charts"
                     halign: "center"
                     size_hint_x: 0.9
-                    font_style: 'H4'
                     bold: True
                     color: 1, 1, 1, 1  # White color text
 
@@ -124,7 +146,6 @@ KV = """
                     text: "Documents"
                     halign: "center"
                     size_hint_x: 0.9
-                    font_style: 'H4'
                     bold: True
                     color: 1, 1, 1, 1  # White color text
 """

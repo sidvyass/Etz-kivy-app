@@ -1,6 +1,19 @@
 import urllib.parse
+import requests
+from kivymd.uix.button import MDButton
+from kivymd.uix.button import MDButtonText
+from kivy.uix.widget import Widget
+import tkinter as tk
+from tkinter import filedialog
 from fuzzywuzzy import fuzz
 from gui.esis_auto_window import EsisAutoGUI
+from kivymd.uix.dialog import (
+    MDDialog,
+    MDDialogHeadlineText,
+    MDDialogSupportingText,
+    MDDialogButtonContainer,
+    MDDialogContentContainer,
+)
 from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI
 import aiohttp
@@ -14,22 +27,21 @@ class EsisAutoController:
     def __init__(self, app, user: UserAPI):
         self.LOGGER = getlogger("Esis Auto")
         self.main_app = app
-        # self.user = UserAPI("60009", "67220")
         self.user = user
-        self.user.login()
 
-        # for prod
+        # NOTE: ONLY FOR TEST - YOU ARE DUMB AF
+        # self.user = UserAPI("60009", "67220")
+        # self.user.login()
+        # self.LOGGER.info(self.user)
 
-        self.LOGGER.info(self.user)
-
-    def go_to_home(self, row_data):
+    def go_to_home(self):
         self.main_app.screen_manager.current = "home_window"
 
     def search(self, esis_window):
         """
         Perform fuzzy search on CO Seq # or PO #. Update results.
-
         """
+
         if esis_window.ids.search_button_text.text == "Reset":
             esis_window.create_table(rows=self.all_rows)
             esis_window.ids.search_button_text.text = "Search"
@@ -308,3 +320,55 @@ class EsisAutoController:
             )
 
         return po_number, co_seq_number, co_reason, co_date, table_data
+
+    def open_file_upload_popup(self):
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename()
+
+        if file_path and file_path.endswith(".rtf"):
+
+            def on_cancel(instance):
+                dialog.dismiss()
+
+            def on_accept(instance):
+                dialog.dismiss()
+                with open(file_path, "rb") as file:
+                    files = {"file": (os.path.basename(file_path), file)}
+                    response = requests.post(
+                        f"{self.user.url}/document-scraped-data/upload_file",
+                        files=files,
+                        headers=self.user.headers,
+                    )
+                    if response.status_code == 200:
+                        self.main_app.show_small_notification("File upload successful!")
+
+                    else:
+                        self.main_app.show_small_notification(
+                            f"ERROR: {response.json()}"
+                        )
+
+            dialog = MDDialog(
+                MDDialogHeadlineText(
+                    text="Confirm Selection",
+                ),
+                MDDialogSupportingText(
+                    text=f"Chosen File for upload - {file_path}. \nAre you sure?",
+                ),
+                MDDialogButtonContainer(
+                    Widget(),
+                    MDButton(
+                        MDButtonText(text="Cancel"), style="text", on_release=on_cancel
+                    ),
+                    MDButton(
+                        MDButtonText(text="Accept"), style="text", on_release=on_accept
+                    ),
+                    spacing="8dp",
+                ),
+            )
+            dialog.open()
+
+        else:
+            self.main_app.show_small_notification(
+                "Select a valid file with .rtf extenstion"
+            )
