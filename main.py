@@ -1,9 +1,16 @@
-import logging
 import requests
+from kivy.metrics import dp
 from kivymd.app import MDApp
-from kivymd.uix.label import MDLabel
-from kivymd.uix.snackbar.snackbar import MDSnackbar
-from kivymd.uix.dialog import MDDialog
+from kivy.uix.widget import Widget
+from kivymd.uix.snackbar.snackbar import MDSnackbar, MDSnackbarText
+from kivymd.uix.button import MDButton
+from kivymd.uix.dialog import (
+    MDDialog,
+    MDDialogHeadlineText,
+    MDDialogSupportingText,
+    MDDialogButtonContainer,
+    MDDialogContentContainer,
+)
 from kivymd.uix.button import MDButtonText
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from controllers.user_controller import UserAPI
@@ -15,17 +22,14 @@ from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
 from kivy.core.window import Window
 import asyncio
-from kivy.logger import Logger, LOG_LEVELS
 
 
 class EsisAutoApp(MDApp):
     dialog = None
 
     def build(self):
-        Logger.setLevel(LOG_LEVELS["warning"])
-
-        self.theme_cls.primary_palette = "Red"
         self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Ghostwhite"
 
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
@@ -78,9 +82,15 @@ class EsisAutoApp(MDApp):
     def show_new_snackbar(self, in_text: str):
         """Helper function to show notification used by the controllers"""
         self.current_snackbar = MDSnackbar(
-            MDLabel(
+            MDSnackbarText(
                 text=in_text,
+                theme_text_color="Custom",
+                text_color="white",
             ),
+            background_color=(0.3, 0.3, 0.3, 1),
+            y=dp(24),
+            pos_hint={"center_x": 0.5},
+            size_hint_x=0.5,
         )
         self.current_snackbar.open()
 
@@ -88,12 +98,24 @@ class EsisAutoApp(MDApp):
 
     def show_notification(self, title: str, text: str):
         self.dialog = MDDialog(
-            title=title,
-            text=text,
-            buttons=[
-                MDButtonText(text="OK", on_release=self.close_dialog),
-                MDButtonText(text="Cancel", on_release=self.close_dialog),
-            ],
+            MDDialogHeadlineText(
+                text=title,
+            ),
+            MDDialogSupportingText(
+                text=text,
+            ),
+            MDDialogButtonContainer(
+                Widget(),
+                MDButton(
+                    MDButtonText(text="Cancel"),
+                    style="text",
+                ),
+                MDButton(
+                    MDButtonText(text="Accept"),
+                    style="text",
+                ),
+                spacing="8dp",
+            ),
         )
         self.dialog.open()
 

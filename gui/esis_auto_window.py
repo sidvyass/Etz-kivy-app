@@ -1,11 +1,9 @@
 import asyncio
-import re
 from kivy.uix.widget import Widget
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.lang import Builder
-from kivy.uix.modalview import ModalView
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.metrics import dp
@@ -26,9 +24,10 @@ KV = """
         padding: 20
         spacing: 20
 
+        # Top navigation bar with home, run scraper, and logout buttons
         BoxLayout:
             size_hint_y: 0.1
-            padding: [20, 10] 
+            padding: [20, 10]
             canvas.before:
                 Color:
                     rgba: 0.1, 0.1, 0.1, 1
@@ -42,151 +41,235 @@ KV = """
                 size_hint_x: 0.1
                 on_release: root.controller.go_to_home()
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # White icon color
+                text_color: 1, 1, 1, 1
 
-            # Expandable Widget to push the buttons to the right
             Widget:
                 size_hint_x: 1
 
-            # Status label
-            MDLabel:
-                text: "Status"
-                halign: "left"
-                valign: "middle"
-                size_hint_x: None
-                width: dp(50)  # Adjust width of the label
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # White text color
-
-            # Status light icon
-            MDIconButton:
-                id: status_light
-                icon: "circle"
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # Default white color (not running)
-                pos_hint: {'center_y': 0.5}
-                size_hint: None, None
-                size: dp(20), dp(20)  # Small size for the indicator
-
-            Button:
-                text: "Run Scraper"
-                text_color: 1, 1, 1, 1  # White text
-                # md_bg_color: app.theme_cls.primary_color
+            MDButton:
+                id: run_scraper
+                style: "filled"
                 on_release: root.start_scraper_on_server()
-                size_hint: None, None
-                size: dp(100), dp(36)
+                size_hint_x: None
+                width: dp(100)
+                height: dp(36)
                 pos_hint: {'center_y': 0.5}
                 padding: dp(10), dp(5)
+                theme_bg_color: "Custom"
+                md_bg_color: 0.3, 0.3, 0.3, 1
 
-            Button:
-                text: "Logout"
-                text_color: 1, 1, 1, 1  # White text
+                MDButtonText:
+                    text: "Run Scraper"
+                    theme_text_color: "Custom"
+                    text_color: "white"
+
+            MDButton:
+                style: "text"
                 on_release: root.controller.main_app.logout()
-                size_hint: None, None
-                size: dp(80), dp(36)
+                size_hint_x: None
+                width: dp(80)
+                height: dp(36)
                 pos_hint: {'center_y': 0.5}
-                padding: dp(10), dp(5)
+                padding: dp(5), dp(5)
 
+                MDButtonText:
+                    text: "Log out"
+                    theme_text_color: "Custom"
+                    text_color: "white"
+
+        # Search bar section
         BoxLayout:
-            orientation: 'vertical'
-            padding: dp(20)
-            spacing: dp(10)  # Adjusted spacing
+            orientation: 'horizontal'
+            spacing: dp(10)
+            size_hint_y: 0.1
+            size_hint_x: 1
 
-            BoxLayout:
-                orientation: 'horizontal'
-                spacing: dp(10)
-                size_hint_y: 0.1
-                size_hint_x: 1
+            MDTextField:
+                id: search_field
+                pos_hint: {'center_y': 0.5}
+                size_hint_x: 0.8
 
-                MDTextField:
-                    id: search_field
-                    hint_text: "Search"
-                    mode: "outlined"
-                    size_hint_x: 0.8
+                MDTextFieldHintText:
+                    text: "Search by PO #, CO Seq #"
 
-                Button:
+                MDTextFieldHelperText:
+                    text: "Enter a valid search value."
+                    mode: "on_error"
+
+            MDButton:
+                id: search_button
+                style: "filled"
+                on_release: root.controller.search(root)
+                size_hint_x: 0.2
+                pos_hint: {'center_y': 0.5}
+                padding: dp(5), dp(5)
+                theme_bg_color: "Custom"
+                md_bg_color: 0.3, 0.3, 0.3, 1
+
+                MDButtonText:
+                    id: search_button_text
                     text: "Search"
-                    size_hint_x: 0.2
-                    on_release: root.on_search_button()
-                    background_color: 0, 0.6, 0, 1  # Green background
+                    theme_text_color: "Custom"
+                    text_color: "white"
 
-            RecycleView:
-                id: table_view
-                viewclass: 'TableRow'
-                size_hint_y: 0.9
-                size_hint_x: 1
-                do_scroll_x: True
-                do_scroll_y: True
-                RecycleBoxLayout:
-                    id: table_layout
-                    orientation: 'vertical'
-                    default_size: None, dp(30)
-                    default_size_hint: 1, None
-                    size_hint_y: None
-                    height: self.minimum_height
+        # Headers for the table
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(40)
+            padding: dp(10)
+
+            Label:
+                text: "PO Number"
+                bold: True
+                size_hint_x: 0.2
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+                padding_x: dp(5)
+
+            Label:
+                text: "CO Number"
+                bold: True
+                size_hint_x: 0.1
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+                padding_x: dp(5)
+
+            Label:
+                text: "CO Reason"
+                bold: True
+                size_hint_x: 0.2
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+                padding_x: dp(5)
+
+            Label:
+                text: "CO Date"
+                bold: True
+                size_hint_x: 0.1
+                halign: 'center'
+                valign: 'middle'
+                text_size: self.size
+                padding_x: dp(5)
+
+            Label:
+                text: "Actions"
+                bold: True
+                size_hint_x: 0.4
+                halign: 'center'
+                valign: 'middle'
+                text_size: self.size
+
+
+        # The RecycleView for the table data
+        RecycleView:
+            id: table_view
+            viewclass: 'TableRow'
+            size_hint_y: 0.9
+            size_hint_x: 1
+            do_scroll_x: True
+            do_scroll_y: True
+
+            RecycleBoxLayout:
+                id: table_layout
+                orientation: 'vertical'
+                default_size: None, dp(60)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(0)
 
 <TableRow>:
     orientation: 'horizontal'
     size_hint_y: None
-    height: dp(30)
-    spacing: dp(5)
+    height: dp(40)
 
-    # Adjust the size_hint_x and width for each widget
     Label:
         text: root.po_number
-        size_hint_x: None
+        size_hint_x: 0.2
         halign: 'left'
         valign: 'middle'
         text_size: self.size
-        size_hint_x: 0.14
+        padding_x: dp(5)
 
     Label:
         text: root.co_number
-        size_hint_x: None
+        size_hint_x: 0.1
         halign: 'left'
         valign: 'middle'
         text_size: self.size
-        size_hint_x: 0.14
+        padding_x: dp(5)
 
     Label:
         text: root.co_reason
-        size_hint_x: None
+        size_hint_x: 0.2
         halign: 'left'
         valign: 'middle'
-        size_hint_x: 0.14
         text_size: self.size
+        padding_x: dp(5)
 
     Label:
         text: root.co_date
-        size_hint_x: None
+        size_hint_x: 0.1
         halign: 'left'
         valign: 'middle'
-        size_hint_x: 0.14
         text_size: self.size
+        padding_x: dp(5)
 
-    Button:
-        text: 'Open Details'
+    MDButton:
+        style: "filled"
         on_release: root.open_details()
-        size_hint_x: 0.14
-        halign: 'center'
+        size_hint_x: 0.1
+        pos_hint: {'center_y': 0.5}
+        theme_bg_color: "Custom"
+        md_bg_color: 0.3, 0.3, 0.3, 1
 
-    Button:
-        text: 'Open File'
+        MDButtonText:
+            text: "Open Details"
+            theme_text_color: "Custom"
+            text_color: "white"
+
+    MDButton:
+        style: "filled"
         on_release: root.controller.open_file(root.row_data)
-        size_hint_x: 0.14
-        halign: 'center'
+        size_hint_x: 0.1
+        pos_hint: {'center_y': 0.5}
+        theme_bg_color: "Custom"
+        md_bg_color: 0.3, 0.3, 0.3, 1
 
-    Button:
-        text: 'Approve'
+        MDButtonText:
+            text: "Open File"
+            theme_text_color: "Custom"
+            text_color: "white"
+
+    MDButton:
+        style: "filled"
         on_release: root.approve_document()
-        halign: 'center'
-        size_hint_x: 0.14
+        size_hint_x: 0.1
+        pos_hint: {'center_y': 0.5}
+        theme_bg_color: "Custom"
+        md_bg_color: 0.3, 0.3, 0.3, 1
 
-    Button:
-        text: 'Discard'
+        MDButtonText:
+            text: "Approve"
+            theme_text_color: "Custom"
+            text_color: "white"
+
+    MDButton:
+        style: "filled"
         on_release: root.discard_document()
-        size_hint_x: 0.14
-        halign: 'center'
+        size_hint_x: 0.1
+        pos_hint: {'center_y': 0.5}
+        theme_bg_color: "Custom"
+        md_bg_color: 0.3, 0.3, 0.3, 1
+
+        MDButtonText:
+            text: "Discard"
+            theme_text_color: "Custom"
+            text_color: "white"
 
 
 <DetailTableRow>:
@@ -308,90 +391,13 @@ class TableRow(BoxLayout):
     row_data = ObjectProperty()
     parent_widget = ObjectProperty()
 
-    def _get_data_helper(self):
-        """
-        [TODO:description]
-        """
-        doc_details = self.controller.documents[self.row_data[4]]
-        headers = doc_details.get("headers", {})
-        po_number = headers.get("PO #", "N/A")
-        co_seq_number = headers.get("CO Seq #", "N/A")
-        co_reason = headers.get("CO Reason", "N/A")
-        co_date = headers.get("CO Date", "N/A")
-        mt_data = doc_details.get("MT", {})
-        file_data = doc_details.get("lines", {})
-        mt_line_numbers = set(
-            key for key, value in mt_data.items() if isinstance(value, dict)
-        )
-        file_line_numbers = set(file_data.keys())
-        line_numbers = file_line_numbers | mt_line_numbers
-
-        def remove_whitespace(s):
-            return re.sub(r"\s+", "", s)
-
-        table_data = []
-        for line_number in sorted(line_numbers):
-            file_line = file_data.get(line_number, {})
-            mt_line = mt_data.get(line_number, {})
-
-            file_qty = remove_whitespace(str(file_line.get("Qty", "N/A")))
-            file_price = remove_whitespace(str(file_line.get("Price", "N/A")))
-            file_uom = remove_whitespace(str(file_line.get("Uom", "N/A")))
-            file_total = remove_whitespace(str(file_line.get("Total", "N/A")))
-            esis_date = remove_whitespace(str(file_line.get("Scheduled Date", "N/A")))
-
-            if isinstance(mt_line, dict):
-                mt_part_number = remove_whitespace(
-                    str(mt_line.get("Part_number", "N/A"))
-                )
-                mt_qty_ordered = remove_whitespace(
-                    str(mt_line.get("Quantity Ordered", "N/A"))
-                )
-                mt_qty_shipped = remove_whitespace(
-                    str(mt_line.get("Quantity Shipped", "N/A"))
-                )
-                mt_status = remove_whitespace(str(mt_line.get("Status", "N/A")))
-                mt_next_due_date = remove_whitespace(
-                    str(mt_line.get("Next Due Date", "N/A"))
-                )
-                mt_next_promise_date = remove_whitespace(
-                    str(mt_line.get("Next Promise Date", "N/A"))
-                )
-            else:
-                mt_part_number = "N/A"
-                mt_qty_ordered = "N/A"
-                mt_qty_shipped = "N/A"
-                mt_status = "N/A"
-                mt_next_due_date = "N/A"
-                mt_next_promise_date = "N/A"
-
-            table_data.append(
-                {
-                    "line_number": line_number,
-                    "file_qty": file_qty,
-                    "file_price": file_price,
-                    "file_uom": file_uom,
-                    "file_total": file_total,
-                    "esis_date": esis_date,
-                    "mt_part_number": mt_part_number,
-                    "mt_qty_ordered": mt_qty_ordered,
-                    "mt_qty_shipped": mt_qty_shipped,
-                    "mt_status": mt_status,
-                    "mt_next_due_date": mt_next_due_date,
-                    "mt_next_promise_date": mt_next_promise_date,
-                }
-            )
-
-        return po_number, co_seq_number, co_reason, co_date, table_data
-
     def open_details(self):
         """
-        [TODO:description]
+        Opens a popup window with the details of all the change orders.
         """
-        self.parent_widget.loading_modal.open()
 
         po_number, co_seq_number, co_reason, co_date, table_data = (
-            self._get_data_helper()
+            self.controller._get_data_helper(self.row_data)
         )
 
         layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
@@ -464,8 +470,6 @@ class TableRow(BoxLayout):
         popup = Popup(title="Document Details", content=layout, size_hint=(0.9, 0.9))
         popup.open()
 
-        self.parent_widget.loading_modal.dismiss()
-
     def approve_document(self):
         asyncio.create_task(
             self.controller.approve_document(self.row_data, self.parent_widget)
@@ -477,16 +481,6 @@ class TableRow(BoxLayout):
         )
 
 
-class LoadingModal(ModalView):
-    """
-    To show a loading icon to the user when doing compute intensive tasks.
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.add_widget(Label(text="Loading...", font_size="20sp"))
-
-
 class EsisAutoGUI(Screen):
     controller = ObjectProperty()
     table_size_bound = False  # Flag to check if size event is bound
@@ -495,13 +489,8 @@ class EsisAutoGUI(Screen):
         super().__init__(**kwargs)
         self.controller = controller
         self.create_table()
-        self.update_status_light = Clock.schedule_interval(
-            self.queue_update_scraper, 15
-        )
-        self.update_documents = Clock.schedule_interval(self.queue_update_documents, 60)
-        self.queue_update_documents()
-
-        self.loading_modal = LoadingModal(size_hint=(0.3, 0.3))
+        self.update_documents = Clock.schedule_interval(self.queue_background_tasks, 60)
+        self.queue_background_tasks()
 
     def create_table(
         self, rows=[("Fetching Data...", "more data", "more data", "", "", "", "")]
@@ -537,14 +526,17 @@ class EsisAutoGUI(Screen):
     # To be compatible with clock in kivy we need to wrap async funcs.
     # NOTE: You cannot do this in any other way. ITS DUMB.
 
-    def queue_update_scraper(self, *args):
-        asyncio.create_task(self.controller.get_scraper_status(self))
-
-    def queue_update_documents(self, *args):
+    def queue_background_tasks(self, *args):
         asyncio.create_task(self.controller.fetch_update_documents(self))
+        asyncio.create_task(self.controller.fetch_scraper_status(self))
 
     def start_scraper_on_server(self, *args):
-        asyncio.create_task(self.controller.start_scraper_on_server())
+        self.ids.run_scraper.disabled = (
+            True  # TODO: enable this button once the scraper service ends
+        )
+        asyncio.create_task(self.controller.start_scraper_on_server(self))
+        # For testing
+        asyncio.create_task(self.controller.fetch_scraper_status(self))
 
 
 Builder.load_string(KV)

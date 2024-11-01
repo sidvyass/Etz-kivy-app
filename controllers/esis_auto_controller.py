@@ -1,37 +1,11 @@
 import urllib.parse
-from kivy.core.window import Window
-from kivy.metrics import dp
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from fuzzywuzzy import fuzz
 from gui.esis_auto_window import EsisAutoGUI
-from kivy.utils import get_color_from_hex
 from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI
 import aiohttp
 import os
 import re
-from kivy.properties import StringProperty
-
-
-class DetailTableRow(BoxLayout):
-    line_number = StringProperty()
-    file_qty = StringProperty()
-    file_price = StringProperty()
-    file_uom = StringProperty()
-    file_total = StringProperty()
-    esis_date = StringProperty()
-    mt_part_number = StringProperty()
-    mt_qty_ordered = StringProperty()
-    mt_qty_shipped = StringProperty()
-    mt_status = StringProperty()
-    mt_next_due_date = StringProperty()
-    mt_next_promise_date = StringProperty()
 
 
 class EsisAutoController:
@@ -48,31 +22,63 @@ class EsisAutoController:
 
         self.LOGGER.info(self.user)
 
-    async def start_scraper_on_server(self):
+    def go_to_home(self, row_data):
+        self.main_app.screen_manager.current = "home_window"
+
+    def search(self, esis_window):
+        """
+        Perform fuzzy search on CO Seq # or PO #. Update results.
+
+        """
+        if esis_window.ids.search_button_text.text == "Reset":
+            esis_window.create_table(rows=self.all_rows)
+            esis_window.ids.search_button_text.text = "Search"
+            esis_window.ids.search_button.md_bg_color = (0.3, 0.3, 0.3, 1)
+            return
+
+        search_val = esis_window.ids.search_field.text
+        search_results = []
+        if search_val:
+            if len(search_val) < 5:  # CO Seq #
+                for row in self.all_rows:
+                    if 50 < fuzz.partial_ratio(search_val, row[1]):
+                        search_results.append(row)
+            else:
+                for row in self.all_rows:
+                    if 50 < fuzz.partial_ratio(search_val, row[2]):
+                        search_results.append(row)
+
+            if len(search_results) >= 1:
+                esis_window.create_table(rows=search_results)
+                esis_window.ids.search_button_text.text = "Reset"
+                esis_window.ids.search_button.md_bg_color = (1, 0, 0, 1)
+
+            else:
+                self.main_app.show_small_notification(
+                    "Search results were none. Check search value."
+                )
+
+        else:
+            esis_window.ids.search_field.error = True
+
+    async def start_scraper_on_server(self, esis_window):
         """
         Makes a requst to the server to start the scraper. Updates on GUI when response.
         """
-        self.main_app.show_small_notification("Requested scraper to start...")
-        self.LOGGER.info(
-            f"{self.user.data['username']} requested to start the scraper, awaiting response..."
-        )
+
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{self.user.url}/run-scraper-service", headers=self.user.headers
             ) as req:
-                self.LOGGER.info(
-                    f"User - {self.user.data['username']} got - {req.status}"
-                )
                 if req.status == 200:
-                    self.main_app.show_notification(
-                        "Done!", "Scraper is running on server!"
+                    self.main_app.show_small_notification(
+                        "Success! Scraper is running."
                     )
-                    return True
                 else:
                     self.main_app.show_notification(
                         "Error", "Scraper may or may not be running"
                     )
-                    return False
+                    esis_window.ids.run_scraper.disabled = False
 
     def cancel_background_tasks(self, esis_window):
         """
@@ -81,29 +87,28 @@ class EsisAutoController:
         :param esis_window ScreenKivy: Kivy UI instance to cancel clock
         """
         # TODO: still need to clear up data
-        esis_window.update_status_light.cancel()
         esis_window.update_documents.cancel()
 
-    async def get_scraper_status(self, esis_window):
-        """Gets data from the API endpoint"""
+    async def fetch_scraper_status(self, esis_window):
+        """
+        Get status, enable disable button
+        """
+
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"{self.user.url}/scraper-status", headers=self.user.headers
             ) as req:
                 if req.status == 200:
-                    response = await req.json()
-                    self.LOGGER.info(f"Server returned - {response}")
-                    if response["status"]:
-                        esis_window.ids.status_light.text_color = get_color_from_hex(
-                            "#00FF00"
-                        )  # Green
+                    is_running = await req.json()
+                    if is_running["status"]:
+                        esis_window.ids.run_scraper.disabled = True
                     else:
-                        esis_window.ids.status_light.text_color = get_color_from_hex(
-                            "#FFFFFF"
-                        )  # White
+                        esis_window.ids.run_scraper.disabled = False
+
                 else:
-                    self.LOGGER.error(f"Server returned - {req.json()}")
-                    return False
+                    self.main_app.show_small_notification(
+                        f"Server did not return a proper response. {req.status}"
+                    )
 
     async def fetch_update_documents(self, esis_window: EsisAutoGUI):
         """
@@ -111,6 +116,7 @@ class EsisAutoController:
 
         :param esis_window: instance of the window to build table UI.
         """
+
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"{self.user.url}/document-scraped-data", headers=self.user.headers
@@ -118,7 +124,7 @@ class EsisAutoController:
                 if req.status == 200:
                     self.documents = await req.json()
 
-                    all_rows = []
+                    self.all_rows = []
                     if not self.documents:
                         return
 
@@ -142,13 +148,13 @@ class EsisAutoController:
                             co_seq_number,
                             co_reason,
                             co_date,
-                            key,  # Key is likely the document identifier
+                            key,
                             create_date,
                             shipping_address_name,
                         )
-                        all_rows.append(row)
+                        self.all_rows.append(row)
 
-                    esis_window.create_table(rows=all_rows)
+                    esis_window.create_table(rows=self.all_rows)
                     self.main_app.show_small_notification("Documents Updated!")
 
                 elif req.status == 401:
@@ -176,7 +182,6 @@ class EsisAutoController:
             self.LOGGER.error(f"{e}")
 
     async def approve_document(self, row_values, esis_window):
-        # show the notification bar with loading icon
 
         if "Cancel Item" in row_values:
             self.main_app.show_notification(
@@ -228,39 +233,22 @@ class EsisAutoController:
                     self.LOGGER.info(response)
                     self.main_app.show_small_notification(f"{response}")
 
-    def go_to_home(self):
-        self.main_app.screen_manager.current = "home_window"
-
-    async def open_details(self, row_filename, spinner):
+    def _get_data_helper(self, row_data):
         """
-        Opens a popup with the details inside.
-
-        :param row_filename: The selected row's data.
-        :param spinner: The loading spinner instance.
+        Prepares all the data for the GUI.
         """
-
-        # Extract the document details using the appropriate key
-        doc_details = self.documents[row_filename[4]]
-
-        # Extract headers from the document details
+        doc_details = self.documents[row_data[4]]
         headers = doc_details.get("headers", {})
-
-        # Extract required fields from headers
         po_number = headers.get("PO #", "N/A")
         co_seq_number = headers.get("CO Seq #", "N/A")
         co_reason = headers.get("CO Reason", "N/A")
         co_date = headers.get("CO Date", "N/A")
-
-        # Extract 'MT' and 'lines' data
         mt_data = doc_details.get("MT", {})
         file_data = doc_details.get("lines", {})
-
-        # Get line numbers from both 'MT' and 'lines' data
         mt_line_numbers = set(
             key for key, value in mt_data.items() if isinstance(value, dict)
         )
         file_line_numbers = set(file_data.keys())
-
         line_numbers = file_line_numbers | mt_line_numbers
 
         def remove_whitespace(s):
@@ -271,16 +259,12 @@ class EsisAutoController:
             file_line = file_data.get(line_number, {})
             mt_line = mt_data.get(line_number, {})
 
-            # Extract data from 'lines' (ESIS) section
             file_qty = remove_whitespace(str(file_line.get("Qty", "N/A")))
             file_price = remove_whitespace(str(file_line.get("Price", "N/A")))
             file_uom = remove_whitespace(str(file_line.get("Uom", "N/A")))
             file_total = remove_whitespace(str(file_line.get("Total", "N/A")))
-            esis_date = remove_whitespace(
-                str(file_line.get("Scheduled Date", "N/A"))
-            )  # New line added
+            esis_date = remove_whitespace(str(file_line.get("Scheduled Date", "N/A")))
 
-            # Extract data from 'MT' section
             if isinstance(mt_line, dict):
                 mt_part_number = remove_whitespace(
                     str(mt_line.get("Part_number", "N/A"))
@@ -306,7 +290,6 @@ class EsisAutoController:
                 mt_next_due_date = "N/A"
                 mt_next_promise_date = "N/A"
 
-            # Append the extracted data to the table data
             table_data.append(
                 {
                     "line_number": line_number,
@@ -324,133 +307,4 @@ class EsisAutoController:
                 }
             )
 
-        # Define the column headers
-        column_headers = [
-            "Line Number",
-            "ESIS Qty",
-            "ESIS Price",
-            "ESIS UOM",
-            "ESIS Total",
-            "ESIS Date",
-            "MT Part Number",
-            "MT Qty Ordered",
-            "MT Qty Shipped",
-            "MT Status",
-            "MT Next Due Date",
-            "MT Next Promise Date",
-        ]
-
-        # Create the layout for the popup
-        layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
-
-        # Create a grid layout for the header information
-        info_layout = GridLayout(cols=2, padding=10, spacing=10, size_hint_y=None)
-        info_layout.bind(minimum_height=info_layout.setter("height"))
-
-        # Add header information to the grid layout
-        info_layout.add_widget(
-            Label(text="PO Number:", bold=True, size_hint_y=None, height=40)
-        )
-        info_layout.add_widget(Label(text=po_number, size_hint_y=None, height=40))
-
-        info_layout.add_widget(
-            Label(text="CO Sequence Number:", bold=True, size_hint_y=None, height=40)
-        )
-        info_layout.add_widget(Label(text=co_seq_number, size_hint_y=None, height=40))
-
-        info_layout.add_widget(
-            Label(text="CO Reason:", bold=True, size_hint_y=None, height=40)
-        )
-        info_layout.add_widget(Label(text=co_reason, size_hint_y=None, height=40))
-
-        info_layout.add_widget(
-            Label(text="CO Date:", bold=True, size_hint_y=None, height=40)
-        )
-        info_layout.add_widget(Label(text=co_date, size_hint_y=None, height=40))
-
-        # Create a scrollable view for the header information
-        info_scrollview = ScrollView(size_hint=(1, None), size=(Window.width, dp(200)))
-        info_scrollview.add_widget(info_layout)
-        layout.add_widget(info_scrollview)
-
-        # Create the header row for the table
-        header_row = BoxLayout(
-            orientation="horizontal", size_hint_y=None, height=dp(30), spacing=dp(5)
-        )
-        header_labels = [
-            {"text": h, "width": dp(80)} if i == 0 else {"text": h, "width": dp(60)}
-            for i, h in enumerate(column_headers)
-        ]
-        header_widths = [
-            dp(80),
-            dp(60),
-            dp(60),
-            dp(60),
-            dp(60),
-            dp(80),
-            dp(100),
-            dp(80),
-            dp(80),
-            dp(80),
-            dp(100),
-            dp(120),
-        ]
-        for i, header in enumerate(column_headers):
-            lbl = Label(
-                text=header,
-                bold=True,
-                size_hint_x=None,
-                width=header_widths[i],
-                halign="center",
-            )
-            header_row.add_widget(lbl)
-
-        # Create the RecycleView
-        rv = RecycleView(size_hint=(1, 1), do_scroll_x=True)
-        rv.viewclass = "DetailTableRow"
-
-        # Define the RecycleBoxLayout
-        rv_layout = RecycleBoxLayout(
-            orientation="vertical",
-            default_size=(None, dp(30)),
-            default_size_hint=(None, None),
-            size_hint=(None, None),
-            width=sum(header_widths) + dp(5) * (len(header_widths) - 1),
-            height=dp(30) * len(table_data),
-        )
-        rv_layout.bind(minimum_height=rv_layout.setter("height"))
-        rv_layout.bind(minimum_width=rv_layout.setter("width"))
-
-        rv.add_widget(rv_layout)
-
-        rv.layout_manager = rv_layout
-
-        # Prepare data for the RecycleView
-        rv.data = table_data
-
-        # Create a container layout for the table
-        table_container = BoxLayout(orientation="vertical", size_hint=(None, None))
-        table_container.bind(minimum_height=table_container.setter("height"))
-        table_container.bind(minimum_width=table_container.setter("width"))
-        table_container.width = rv_layout.width
-        table_container.add_widget(header_row)
-        table_container.add_widget(rv)
-
-        # Add the table_container to a ScrollView
-        table_scroll = ScrollView(size_hint=(1, 1), do_scroll_x=True)
-        table_scroll.add_widget(table_container)
-
-        layout.add_widget(table_scroll)
-
-        # Add a close button to the popup
-        close_button = Button(text="Close", size_hint_y=None, height=50)
-        layout.add_widget(close_button)
-
-        # Create and open the popup
-        popup = Popup(title="Document Details", content=layout, size_hint=(0.9, 0.9))
-
-        close_button.bind(on_release=popup.dismiss)
-
-        spinner.dismiss()
-
-        popup.open()
+        return po_number, co_seq_number, co_reason, co_date, table_data
