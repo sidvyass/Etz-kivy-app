@@ -1,3 +1,4 @@
+from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
@@ -50,7 +51,7 @@ KV = """
                     text_color: 1, 1, 1, 1  # White text color
 
                     MDButtonText:
-                        text: "Button 2"
+                        text: "Email"
                         theme_text_color: "Custom"
                         text_color: "white"
 
@@ -64,7 +65,7 @@ KV = """
                     text_color: 1, 1, 1, 1  # White text color
 
                     MDButtonText:
-                        text: "Button 3"
+                        text: "RFQ Gen"
                         theme_text_color: "Custom"
                         text_color: "white"
 
@@ -78,16 +79,18 @@ KV = """
                     text_color: 1, 1, 1, 1  # White text color
 
                     MDButtonText:
-                        text: "Button 4"
+                        text: "Doc control"
                         theme_text_color: "Custom"
                         text_color: "white"
             MDLabel:
                 text: "Home"
                 halign: "center"
+                valign: "middle"
                 font_style: "Display"
+                size_hint_y: 1
                 size_hint_x: 0.8
                 bold: True
-                color: 1, 1, 1, 1  # White color text
+                color: 1, 1, 1, 1 
 
             MDIconButton:
                 icon: "logout"
@@ -117,20 +120,9 @@ KV = """
 
             # Middle Column (Empty for now)
             BoxLayout:
+                id: chart_box
                 size_hint_x: 0.6
                 padding: 10
-                canvas.before:
-                    Color:
-                        rgba: 0.15, 0.15, 0.15, 1  # Dark background for the middle column
-                    Rectangle:
-                        size: self.size
-                        pos: self.pos
-                MDLabel:
-                    text: "Data/Charts"
-                    halign: "center"
-                    size_hint_x: 0.9
-                    bold: True
-                    color: 1, 1, 1, 1  # White color text
 
             # Right Column (Empty for now)
             BoxLayout:
@@ -155,8 +147,15 @@ Builder.load_string(KV)
 
 class HomeWindow(Screen):
     controller = ObjectProperty()
+    chart_box = ObjectProperty()
 
     def __init__(self, controller, **kwargs):
         print("starting...")
         super(HomeWindow, self).__init__(**kwargs)
         self.controller = controller
+        self.add_chart()
+
+    def add_chart(self):
+        chart_image = Image(source=r"./dark_mode_employee_data_table.png")
+        self.ids.chart_box.clear_widgets()
+        self.ids.chart_box.add_widget(chart_image)

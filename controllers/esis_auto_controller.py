@@ -144,7 +144,7 @@ class EsisAutoController:
                         document = self.documents[key]
                         headers = document.get("headers", {})
 
-                        po_number = headers.get("PO #", "NA")
+                        po_number = key
                         co_seq_number = headers.get("CO Seq #", "NA")
                         co_reason = headers.get("CO Reason", "NA")
                         co_date = headers.get("CO Date", "NA")

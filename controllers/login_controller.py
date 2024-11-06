@@ -11,8 +11,10 @@ class LoginController:
 
     def authenticate(self, username: str, password: str, login_window):
         """Makes API request to authenticate. Calls the load_window function if successful"""
-        self.user = UserAPI(username, password)
-        self.LOGGER.info(f"{username} - Logging in...")
+        # self.user = UserAPI(username, password)
+
+        # NOTE: for testing
+        self.user = UserAPI("60009", "67220")
 
         is_logged_in = self.user.login()  # json response if login incorrect
         if not is_logged_in:
