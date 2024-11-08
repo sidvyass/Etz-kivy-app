@@ -3,4 +3,5 @@ Pipfile.lock
 database/config.yaml
 testing/
 todo.md
+*.png
 

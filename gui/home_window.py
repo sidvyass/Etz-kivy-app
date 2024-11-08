@@ -150,12 +150,11 @@ class HomeWindow(Screen):
     chart_box = ObjectProperty()
 
     def __init__(self, controller, **kwargs):
-        print("starting...")
         super(HomeWindow, self).__init__(**kwargs)
         self.controller = controller
         self.add_chart()
 
     def add_chart(self):
-        chart_image = Image(source=r"./dark_mode_employee_data_table.png")
+        chart_image = Image(source=r"C:\PythonProjects\esis-auto-gui\image.png")
         self.ids.chart_box.clear_widgets()
         self.ids.chart_box.add_widget(chart_image)

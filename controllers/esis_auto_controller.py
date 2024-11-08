@@ -1,3 +1,4 @@
+import asyncio
 import urllib.parse
 import requests
 from kivymd.uix.button import MDButton
@@ -44,6 +45,7 @@ class EsisAutoController:
 
         if esis_window.ids.search_button_text.text == "Reset":
             esis_window.create_table(rows=self.all_rows)
+            esis_window.ids.search_field.text = ""
             esis_window.ids.search_button_text.text = "Search"
             esis_window.ids.search_button.md_bg_color = (0.3, 0.3, 0.3, 1)
             return
@@ -92,15 +94,6 @@ class EsisAutoController:
                     )
                     esis_window.ids.run_scraper.disabled = False
 
-    def cancel_background_tasks(self, esis_window):
-        """
-        Only run at when exiting the esis window.
-
-        :param esis_window ScreenKivy: Kivy UI instance to cancel clock
-        """
-        # TODO: still need to clear up data
-        esis_window.update_documents.cancel()
-
     async def fetch_scraper_status(self, esis_window):
         """
         Get status, enable disable button
@@ -114,8 +107,10 @@ class EsisAutoController:
                     is_running = await req.json()
                     if is_running["status"]:
                         esis_window.ids.run_scraper.disabled = True
+                        esis_window.ids.run_scraper.md_bg_color = (0, 1, 0, 1)
                     else:
                         esis_window.ids.run_scraper.disabled = False
+                        esis_window.ids.run_scraper.md_bg_color = (1, 0, 0, 1)
 
                 else:
                     self.main_app.show_small_notification(
@@ -167,7 +162,6 @@ class EsisAutoController:
                         self.all_rows.append(row)
 
                     esis_window.create_table(rows=self.all_rows)
-                    self.main_app.show_small_notification("Documents Updated!")
 
                 elif req.status == 401:
                     self.main_app.show_notification("Logged Out", "Please login again.")
@@ -194,6 +188,12 @@ class EsisAutoController:
             self.LOGGER.error(f"{e}")
 
     async def approve_document(self, row_values, esis_window):
+        """
+        [TODO:description]
+
+        :param row_values [TODO:type]: [TODO:description]
+        :param esis_window [TODO:type]: [TODO:description]
+        """
 
         if "Cancel Item" in row_values:
             self.main_app.show_notification(
@@ -321,7 +321,12 @@ class EsisAutoController:
 
         return po_number, co_seq_number, co_reason, co_date, table_data
 
-    def open_file_upload_popup(self):
+    def open_file_upload_popup(self, esis_window):
+        """
+        Popup box to upload files, will not accept anything other than rtf files.
+
+        :param esis_window Screen: esis window screen instance
+        """
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename()
@@ -348,6 +353,9 @@ class EsisAutoController:
                             f"ERROR: {response.json()}"
                         )
 
+                self.LOGGER.info("Updating documents...")
+                self._fetch_update_documents_wrapper(esis_window)
+
             dialog = MDDialog(
                 MDDialogHeadlineText(
                     text="Confirm Selection",
@@ -372,3 +380,11 @@ class EsisAutoController:
             self.main_app.show_small_notification(
                 "Select a valid file with .rtf extenstion"
             )
+
+    def _fetch_update_documents_wrapper(self, esis_window):
+        """
+        Wrapper to update documents once an event is done such as doc upload.
+
+        :param esis_window Screen: GUI window instance
+        """
+        asyncio.create_task(self.fetch_update_documents(esis_window))

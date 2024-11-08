@@ -6,7 +6,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.clock import Clock
 from kivy.uix.boxlayout import BoxLayout
 from gui.esis_window.asn_rc_popup import open_asn_rcs_popup
-from gui.esis_window.detail_popup import open_details
+from gui.esis_window.detail_popup import open_details_popup
 
 
 KV = """
@@ -51,18 +51,16 @@ KV = """
                 pos_hint: {'center_y': 0.5}
                 padding: dp(10), dp(5)
                 theme_bg_color: "Custom"
-                md_bg_color: 0.3, 0.3, 0.3, 1
+                md_bg_color: 1, 0, 0, 1
 
                 MDButtonText:
                     text: "Run Scraper"
-                    theme_text_color: "Custom"
-                    text_color: "white"
 
             MDIconButton:
                 icon: "cloud-upload"
                 size_hint_y: 1
                 size_hint_x: 0.1
-                on_release: root.controller.open_file_upload_popup()
+                on_release: root.controller.open_file_upload_popup(root)
                 text_color: 1, 1, 1, 1
 
             MDIconButton:
@@ -296,11 +294,10 @@ class TableRow(BoxLayout):
     row_data = ObjectProperty()
     parent_widget = ObjectProperty()
 
-    # TODO: map these to the controller so that we can log it
     def open_details(self):
-        open_details(self.controller._get_data_helper(self.row_data))
+        open_details_popup(self.controller._get_data_helper(self.row_data))
 
-    def approve_document(self):
+    def approve_docrment(self):
         asyncio.create_task(
             self.controller.approve_document(self.row_data, self.parent_widget)
         )
@@ -310,10 +307,8 @@ class TableRow(BoxLayout):
             self.controller.discard_document(self.row_data, self.parent_widget)
         )
 
-    # TODO: map these to the controller so that we can log it
     def open_asn_rcs_popup(self):
-        data = self.controller.documents[self.row_data[4]]
-        open_asn_rcs_popup(data)
+        open_asn_rcs_popup(self.controller.documents[self.row_data[4]])
 
 
 class EsisAutoGUI(Screen):
@@ -323,13 +318,27 @@ class EsisAutoGUI(Screen):
     def __init__(self, controller, **kwargs):
         super().__init__(**kwargs)
         self.controller = controller
-        self.create_table()
-        self.update_documents = Clock.schedule_interval(self.queue_background_tasks, 60)
+
+    def on_enter(self, *args):
+        self.controller.LOGGER.info("exe...")
+        self.background_tasks = Clock.schedule_interval(self.queue_background_tasks, 60)
         self.queue_background_tasks()
+        self.create_table()
+        return super().on_enter(*args)
+
+    def on_leave(self, *args):
+        self.controller.LOGGER.info("exe...")
+        self.background_tasks.cancel()
+        return super().on_leave(*args)
 
     def create_table(
         self, rows=[("Fetching Data...", "more data", "more data", "", "", "", "")]
     ):
+        """
+        Populate the table using a list of tuples.
+
+        :param rows list[tuple]: Data where each row is a tuple.
+        """
 
         data = []
         for row in rows:
@@ -367,12 +376,10 @@ class EsisAutoGUI(Screen):
         asyncio.create_task(self.controller.fetch_scraper_status(self))
 
     def start_scraper_on_server(self, *args):
-        self.ids.run_scraper.disabled = (
-            True  # TODO: enable this button once the scraper service ends
-        )
+        # TODO: enable this button and make bg green when running
+        self.ids.run_scraper.disabled = True
+        self.ids.run_scraper.md_bg_color = (0, 1, 0, 1)
         asyncio.create_task(self.controller.start_scraper_on_server(self))
-        # For testing
-        asyncio.create_task(self.controller.fetch_scraper_status(self))
 
 
 Builder.load_string(KV)

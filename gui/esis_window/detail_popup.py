@@ -107,7 +107,7 @@ class DetailTableRow(BoxLayout):
     mt_next_promise_date = StringProperty()
 
 
-def open_details(data):
+def open_details_popup(data):
     po_number, co_seq_number, co_reason, co_date, table_data = data
 
     layout = BoxLayout(orientation="vertical", padding=10, spacing=10)

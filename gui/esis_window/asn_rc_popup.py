@@ -6,7 +6,13 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.button import Button
+
+
+# TODO:
+#   1. Layout in full screen does not cover the full screen
+
+# NOTE: the open details popup is with size hints and not fixed sizes
+
 
 kv = """
 <RCRow>:
@@ -14,35 +20,46 @@ kv = """
     height: dp(40)
     BoxLayout:
         orientation: 'horizontal'
+        size_hint_x: None
+        width: self.minimum_width
         Label:
             text: root.advice_date
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.pack_slip
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.planned_delivery_date
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(150)
         Label:
             text: root.received_date
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.buyer_part
-            size_hint_x: 0.2
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.po_line
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.qty_received
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.uom
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
 
         Button:
             text: "Open File"
             on_release: root.open_file()
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
             background_color: (0.3, 0.3, 0.3, 1)
             color: (1, 1, 1, 1)
             pos_hint: {'center_y': 0.5}
@@ -52,42 +69,51 @@ kv = """
     height: dp(40)
     BoxLayout:
         orientation: 'horizontal'
+        size_hint_x: None
+        width: self.minimum_width
         Label:
             text: root.delivery_date
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.pack_slip
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.ship_date
-            size_hint_x: 0.1
-        Label:
-            text: root.shipment_id
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(150)
         Label:
             text: root.asn_line
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.buyer_part
-            size_hint_x: 0.2
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.po_line
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.ship_qty
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
         Label:
             text: root.uom
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
 
         Button:
             text: "Open File"
             on_release: root.open_file()
-            size_hint_x: 0.1
+            size_hint_x: None
+            width: dp(100)
             background_color: (0.3, 0.3, 0.3, 1)
             color: (1, 1, 1, 1)
             pos_hint: {'center_y': 0.5}
 """
+
 
 Builder.load_string(kv)
 
@@ -119,24 +145,14 @@ class RCRow(BoxLayout):
 class ASNRow(BoxLayout):
     asn_id = StringProperty()
     asn_filepath = StringProperty()
-    bill_of_lading = StringProperty()
-    carrier = StringProperty()
     delivery_date = StringProperty()
-    freight = StringProperty()
-    lead_asn = StringProperty()
-    handling_units = StringProperty()
     pack_slip = StringProperty()
-    prem_frgt_auth = StringProperty()
     ship_date = StringProperty()
-    shipment_id = StringProperty()
-    shipping_days = StringProperty()
     asn_line = StringProperty()
     buyer_part = StringProperty()
     po_line = StringProperty()
-    po_number = StringProperty()
     ship_qty = StringProperty()
     uom = StringProperty()
-    vendor_part = StringProperty()
 
     def open_file(self):
         import os
@@ -156,23 +172,39 @@ def open_asn_rcs_popup(data):
     layout.add_widget(rc_label)
 
     # Header for RCs
-    rc_header = BoxLayout(orientation="horizontal", size_hint_y=None, height=30)
-    rc_header.add_widget(Label(text="Advice Date", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Pack Slip", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Planned Delivery Date", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Received Date", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Buyer Part", size_hint_x=0.2))
-    rc_header.add_widget(Label(text="PO Line", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Qty Received", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="UOM", size_hint_x=0.1))
-    rc_header.add_widget(Label(text="Action", size_hint_x=0.1))
-    layout.add_widget(rc_header)
+    rc_header = BoxLayout(orientation="horizontal", size_hint=(None, None), height=30)
+    rc_header.bind(minimum_width=rc_header.setter("width"))
+    rc_header.add_widget(Label(text="Advice Date", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="Pack Slip", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(
+        Label(text="Planned Delivery Date", size_hint_x=None, width=dp(150))
+    )
+    rc_header.add_widget(Label(text="Received Date", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="Buyer Part", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="PO Line", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="Qty Received", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="UOM", size_hint_x=None, width=dp(100)))
+    rc_header.add_widget(Label(text="Action", size_hint_x=None, width=dp(100)))
 
     # ScrollView for RCs
-    rc_scroll = ScrollView(size_hint=(1, 0.4))
-    rc_container = BoxLayout(orientation="vertical", size_hint_y=None)
+    rc_scroll = ScrollView(size_hint=(1, 0.4), do_scroll_x=True)
+
+    # Create a container to hold both the header and data rows
+    rc_box = BoxLayout(orientation="vertical", size_hint=(None, None))
+    rc_box.bind(minimum_height=rc_box.setter("height"))
+    rc_box.bind(minimum_width=rc_box.setter("width"))
+
+    # Add header to the container
+    rc_box.add_widget(rc_header)
+
+    # Container for RC data rows
+    rc_container = BoxLayout(orientation="vertical", size_hint=(None, None))
     rc_container.bind(minimum_height=rc_container.setter("height"))
-    rc_scroll.add_widget(rc_container)
+    rc_container.bind(minimum_width=rc_container.setter("width"))
+    rc_box.add_widget(rc_container)
+
+    # Add the container to the ScrollView
+    rc_scroll.add_widget(rc_box)
     layout.add_widget(rc_scroll)
 
     # Populate RCs
@@ -200,24 +232,37 @@ def open_asn_rcs_popup(data):
     layout.add_widget(asn_label)
 
     # Header for ASNs
-    asn_header = BoxLayout(orientation="horizontal", size_hint_y=None, height=30)
-    asn_header.add_widget(Label(text="Delivery Date", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Pack Slip", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Ship Date", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Shipment ID", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="ASN Line", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Buyer Part", size_hint_x=0.2))
-    asn_header.add_widget(Label(text="PO Line", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Ship Qty", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="UOM", size_hint_x=0.1))
-    asn_header.add_widget(Label(text="Action", size_hint_x=0.1))
-    layout.add_widget(asn_header)
+    asn_header = BoxLayout(orientation="horizontal", size_hint=(None, None), height=30)
+    asn_header.bind(minimum_width=asn_header.setter("width"))
+    asn_header.add_widget(Label(text="Delivery Date", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="Pack Slip", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="Ship Date", size_hint_x=None, width=dp(150)))
+    asn_header.add_widget(Label(text="ASN Line", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="Buyer Part", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="PO Line", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="Ship Qty", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="UOM", size_hint_x=None, width=dp(100)))
+    asn_header.add_widget(Label(text="Action", size_hint_x=None, width=dp(100)))
 
     # ScrollView for ASNs
-    asn_scroll = ScrollView(size_hint=(1, 0.4))
-    asn_container = BoxLayout(orientation="vertical", size_hint_y=None)
+    asn_scroll = ScrollView(size_hint=(1, 0.4), do_scroll_x=True)
+
+    # Create a container to hold both the header and data rows
+    asn_box = BoxLayout(orientation="vertical", size_hint=(None, None))
+    asn_box.bind(minimum_height=asn_box.setter("height"))
+    asn_box.bind(minimum_width=asn_box.setter("width"))
+
+    # Add header to the container
+    asn_box.add_widget(asn_header)
+
+    # Container for ASN data rows
+    asn_container = BoxLayout(orientation="vertical", size_hint=(None, None))
     asn_container.bind(minimum_height=asn_container.setter("height"))
-    asn_scroll.add_widget(asn_container)
+    asn_container.bind(minimum_width=asn_container.setter("width"))
+    asn_box.add_widget(asn_container)
+
+    # Add the container to the ScrollView
+    asn_scroll.add_widget(asn_box)
     layout.add_widget(asn_scroll)
 
     # Populate ASNs
@@ -232,7 +277,6 @@ def open_asn_rcs_popup(data):
             asn_row.delivery_date = asn_headers.get("delivery_date", "")
             asn_row.pack_slip = asn_headers.get("pack_slip", "")
             asn_row.ship_date = asn_headers.get("ship_date", "")
-            asn_row.shipment_id = asn_headers.get("shipment_id", "")
             asn_row.asn_line = asn_data.get("asn_line", "")
             asn_row.buyer_part = asn_data.get("buyer_part", "")
             asn_row.po_line = asn_data.get("po_line", "")
@@ -272,29 +316,19 @@ test_data = {
     ],
     "ASNs": [
         {
-            "ASN 4502305489": {
+            "ASN 1234567890": {
                 "ASN Filepath": "C:\\PythonProjects\\auto-server\\services\\scraper\\downloads\\asn_1.rtf",
                 "ASN Headers": {
-                    "bill_of_lading": "",
-                    "carrier": "Supplier Truck",
-                    "delivery_date": "11/04/2024",
-                    "freight": "Supplier Billed",
-                    "lead_asn": "",
-                    "no_of_handling_units": "1",
-                    "pack_slip": "31111",
-                    "prem_frgt_auth": "",
-                    "ship_date": "11/01/2024",
-                    "shipment_id": "962676958H000117941",
-                    "shipping_days": "3 Calendar Days",
+                    "delivery_date": "10/28/24",
+                    "pack_slip": "31100",
+                    "ship_date": "10/27/24",
                 },
                 "ASN data": {
-                    "asn_line": "1",
-                    "buyer_part": "C01701724-001",
-                    "po_line": "00030",
-                    "po_number": "4502305489",
-                    "ship_qty": "20",
+                    "asn_line": "00010",
+                    "buyer_part": "141T5332-7",
+                    "po_line": "00010",
+                    "ship_qty": "4",
                     "uom": "EA",
-                    "vendor_part": None,
                 },
             }
         }
