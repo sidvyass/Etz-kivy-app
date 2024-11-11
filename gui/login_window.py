@@ -1,4 +1,5 @@
 from kivy.lang import Builder
+from kivy.clock import Clock
 from kivy.uix.screenmanager import Screen
 from kivy.properties import ObjectProperty
 
@@ -64,12 +65,19 @@ KV = """
 # NOTE: the controller calls the load_main_window function once auth is successful
 
 
-Builder.load_string(KV)
-
-
 class LoginWindow(Screen):
     controller = ObjectProperty()
 
     def __init__(self, controller, **kwargs):
         super(LoginWindow, self).__init__(**kwargs)
         self.controller = controller
+
+    def on_enter(self, *args):
+        Clock.schedule_once(self.controller.check_server_status)
+        super().on_enter(*args)
+
+    def on_leave(self, *args):
+        super().on_leave(*args)
+
+
+Builder.load_string(KV)

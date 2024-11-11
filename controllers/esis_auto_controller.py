@@ -13,7 +13,6 @@ from kivymd.uix.dialog import (
     MDDialogHeadlineText,
     MDDialogSupportingText,
     MDDialogButtonContainer,
-    MDDialogContentContainer,
 )
 from controllers.base_logger import getlogger
 from controllers.user_controller import UserAPI

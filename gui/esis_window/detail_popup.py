@@ -1,3 +1,4 @@
+from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
@@ -113,7 +114,6 @@ def open_details_popup(data):
     layout = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
     info_layout = GridLayout(cols=2, padding=10, spacing=10, size_hint_y=None)
-    info_layout.bind(minimum_height=info_layout.setter("height"))
 
     info_layout.add_widget(
         Label(text="PO Number:", bold=True, size_hint_y=None, height=40)
@@ -139,7 +139,6 @@ def open_details_popup(data):
     scroll_view = ScrollView(do_scroll_x=True, size_hint_y=1)
 
     table_layout = GridLayout(cols=1, size_hint_y=None, spacing=dp(5))
-    table_layout.bind(minimum_height=table_layout.setter("height"))
 
     header_row = DetailTableRow(
         line_number="Line Number",
@@ -179,3 +178,16 @@ def open_details_popup(data):
 
     popup = Popup(title="Document Details", content=layout, size_hint=(0.9, 0.9))
     popup.open()
+
+
+test_data = {}
+
+
+class TestPopupApp(App):
+    def build(self):
+        open_details_popup(test_data)
+        return BoxLayout()
+
+
+if __name__ == "__main__":
+    TestPopupApp().run()

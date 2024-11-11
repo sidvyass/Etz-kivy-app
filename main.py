@@ -50,7 +50,7 @@ class EsisAutoApp(MDApp):
 
     def load_main_window(self, user):
         """
-        # NOT FOR MANUAL USE
+        NOT FOR MANUAL USE
         Called by login controller after successful auth.
 
         :param user UserAPI: Login controller passes the user to this.
@@ -126,8 +126,6 @@ class EsisAutoApp(MDApp):
     def logout(self):
         req = requests.post(f"{self.user.url}/logout", headers=self.user.headers)
         if req.status_code == 200:
-            # TODO:: add all the deactivations of the clock here
-            self.esis_window_controller.cancel_background_tasks(self.esis_view)
             self.screen_manager.current = "login_screen"
 
 
