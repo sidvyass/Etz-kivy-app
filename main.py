@@ -1,3 +1,4 @@
+import asyncio
 import requests
 from kivy.metrics import dp
 from kivymd.app import MDApp
@@ -12,6 +13,7 @@ from kivymd.uix.dialog import (
     MDDialogContentContainer,
 )
 from kivymd.uix.button import MDButtonText
+from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from controllers.user_controller import UserAPI
 from gui.login_window import LoginWindow
@@ -20,8 +22,9 @@ from controllers.esis_auto_controller import EsisAutoController
 from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
 from controllers.home_controller import HomeController
-from kivy.core.window import Window
-import asyncio
+
+from gui.email_window import EmailTrackerWindow
+from controllers.email_controller import EmailTrackerController
 
 
 class EsisAutoApp(MDApp):
@@ -34,12 +37,17 @@ class EsisAutoApp(MDApp):
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
-        controller = LoginController(self)
-        view = LoginWindow(controller=controller)
+        # FOR_LIVE:
+        # controller = LoginController(self)
+        # view = LoginWindow(controller=controller)
 
+        # TEST:
         # controller = EsisAutoController(self, UserAPI("60009", "67220"))
         # view = EsisAutoGUI(controller)
 
+        # TEST: email tracker
+        controller = EmailTrackerController()
+        view = EmailTrackerWindow(controller=controller)
         self.screen_manager.add_widget(view)
 
         # notifications
