@@ -1,3 +1,5 @@
+import win32com.client
+import asyncio
 from kivy.uix.screenmanager import Screen
 import win32com.client
 from kivy.properties import StringProperty, ObjectProperty
@@ -5,6 +7,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
+from controllers.email_controller.scripts import main
+from controllers.main_email_controller import EmailTrackerController
 
 
 KV = """
@@ -63,7 +67,7 @@ KV = """
 
     Label:
         text: root.email_id
-        size_hint_x: 0.4
+        size_hint_x: 0.2
         halign: 'left'
         valign: 'middle'
         text_size: self.size
@@ -79,7 +83,31 @@ KV = """
 
     Label:
         text: root.last_reply_date
-        size_hint_x: 0.3
+        size_hint_x: 0.2
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        padding_x: dp(5)
+
+    Label:
+        text: "<Email Subject>"
+        size_hint_x: 0.1  # change
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        padding_x: dp(5)
+
+    Label:
+        text: "<SENDER NAME>"
+        size_hint_x: 0.1  # change
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        padding_x: dp(5)
+
+    Label:
+        text: "<Company Name>"
+        size_hint_x: 0.1  # change
         halign: 'left'
         valign: 'middle'
         text_size: self.size
@@ -139,30 +167,24 @@ class EmailTrackerWindow(Screen):
 
     def __init__(self, controller, **kwargs) -> None:
         super(EmailTrackerWindow, self).__init__(**kwargs)
-        self.controller = controller
+        self.controller: EmailTrackerController = controller
 
     def on_enter(self, *args):
         # TODO: we schedule the task to start scraping here
 
-        dummy_data = self.controller.check_responses()
-        self.ids.tracker_row.data = dummy_data
+        asyncio.create_task(self.controller.on_start_up())
+
         return super().on_enter(*args)
-
-    async def pull_cognito_data_check_outlook_wrapper(self):
-        # Display that the app is pulling cognito data
-        # Pull Cognito Data from API
-        # Display that the app is scraping outlook
-        # Scrape Outlook
-        # Load screen
-
-        pass
 
     def on_leave(self, *args):
         # TODO: end task to scrape emails here
         return super().on_leave(*args)
 
-    def add_email_to_listen_for(self):
-        pass
+    # TEST:
+    def outlook_listener_wrapper(self):
+        # we run this with clock every minute
+
+        asyncio.create_task(self.controller.listen_for_emails())
 
 
 Builder.load_string(KV)

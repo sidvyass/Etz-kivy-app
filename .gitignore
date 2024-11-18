@@ -2,7 +2,7 @@ Pipfile
 Pipfile.lock
 database/config.yaml
 testing/
-todo.md
+*.md
 *.png
 *.xlsx
-
+tasks.md
