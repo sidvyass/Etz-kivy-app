@@ -3,11 +3,11 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import datetime
 from pprint import pprint
 import asyncio
 import json
 import aiofiles
-import time
 from controllers.base_logger import getlogger
 from controllers.email_controller.scripts import main
 import win32com.client
@@ -17,7 +17,12 @@ import pythoncom
 
 class EmailItem:
     def __init__(
-        self, email_id, email_count=0, company_name=None, fullname=None, emails_list=[]
+        self,
+        email_id,
+        email_count=0,
+        company_name=None,
+        fullname=None,
+        emails_list=None,
     ):
         self.LOGGER = getlogger("Email Item")
         self.email_id = email_id
@@ -25,24 +30,23 @@ class EmailItem:
         self.fullname = fullname
         self.email_count = email_count
 
-        # (email subject, recieved time, (location))
-        # TODO: One of these should also contain a datetime obj
         self.emails_list: List[Tuple[str, str, Tuple[str, str]]] = (
-            emails_list  # All emails
+            []
+            if not emails_list
+            else emails_list  # (email subject, recieved time, (location))
         )
 
     def __repr__(self) -> str:
         return f"Email ID: {self.email_id}\nCount: {self.email_count}"
 
-    async def find_emails(self) -> None:
+    async def find_emails(self, filter_year=datetime.datetime.now().year) -> None:
         """
         finds all emails by self.email_id. Runs in an executor so that it is non-blocking.
         """
 
-        self.LOGGER.info(f"finding {self.email_id}...")
-        start_time = time.perf_counter()
+        self.LOGGER.info(f"Finding emails from {self.email_id}...")
 
-        def _find_emails_sync(email_id):
+        def _find_emails_sync():
             pythoncom.CoInitialize()
             try:
                 outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace(
@@ -52,7 +56,10 @@ class EmailItem:
                 inbox = outlook.GetDefaultFolder(6)  # 6 refers to the inbox
                 messages = inbox.Items
                 messages.Sort("[ReceivedTime]", Descending=True)
-                filter_query = f"[SenderEmailAddress] = '{email_id}'"
+
+                start_of_year = f"{filter_year}-01-01"
+
+                filter_query = f"[SenderEmailAddress] = '{self.email_id}' AND [ReceivedTime] >= '{start_of_year}'"
                 filtered_items = messages.Restrict(filter_query)
 
                 self.email_count = len(filtered_items)
@@ -66,15 +73,15 @@ class EmailItem:
                         )
                     )
             except Exception as e:
-                self.LOGGER.error(f"{self.email_id} has an error - {e}")
+                self.LOGGER.error(f"{self.email_id} has an error.\n{e}")
             finally:
                 pythoncom.CoUninitialize()
                 self.LOGGER.info(
-                    f"{self.email_id} task completed.\nTime Taken - {time.perf_counter() - start_time}\n*************************"
+                    f"{self.email_id} task completed.\n*************************"
                 )
 
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, _find_emails_sync, self.email_id)
+        await loop.run_in_executor(None, _find_emails_sync)
 
     def to_dict(self) -> dict:
         return {
@@ -91,7 +98,7 @@ class EmailTrackerController:
         self.tracked_emails: Dict[str, EmailItem] = {}
         self.configs = None
         # self.user: UserAPI = user
-        self.last_email_id = None
+        self.last_entry_id = None
         self.config_file_path = (
             r"C:\PythonProjects\esis-auto-gui\controllers\email_controller\config.json"
         )
@@ -138,10 +145,11 @@ class EmailTrackerController:
     async def listen_for_emails(self):
         self.LOGGER.info("Polling outlook...")
 
-        if not self.last_email_id:
+        if not self.last_entry_id:
             raise ValueError
 
         def _listen_process_email_sync():
+            # what to do when there is no entry ID?
             pythoncom.CoInitialize()
             try:
                 outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace(
@@ -153,10 +161,10 @@ class EmailTrackerController:
                 messages.Sort("[ReceivedTime]", Descending=True)
 
                 for msg in messages:
-                    while msg.EntryID != self.last_email_id:
+                    while msg.EntryID != self.last_entry_id:
                         self.process_email(msg, inbox)
                         self.LOGGER.info()
-                    self.last_email_id = msg.EntryID
+                    self.last_entry_id = msg.EntryID
                     break
 
             except Exception as e:
@@ -183,4 +191,3 @@ class EmailTrackerController:
 
 if __name__ == "__main__":
     e = EmailTrackerController()
-    asyncio.run(e.on_start_up())
