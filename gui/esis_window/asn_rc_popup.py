@@ -13,6 +13,8 @@ from kivy.uix.scrollview import ScrollView
 
 # NOTE: the open details popup is with size hints and not fixed sizes
 
+# TODO: fix the errors that the LSP is flagging. Read the API for fuck's sake.
+
 
 kv = """
 <RCRow>:

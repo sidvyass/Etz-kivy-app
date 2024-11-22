@@ -2,21 +2,18 @@ import os
 import asyncio
 import json
 import aiofiles
-from controllers.base_logger import getlogger
-from controllers.email_controller.scripts import main, EmailItem
+import pythoncom
 import win32com.client
 from typing import Dict, Any
-import pythoncom
-from gui.email_window.loading_screen import LoadingScreen
 from controllers.user_controller import UserAPI  # only for type hints
+from controllers.email_controller.email_item_class import EmailItem
+from controllers.base_logger import getlogger
+from controllers.email_controller.scripts import main
 
 
 DATA_FILE_PATH = r"C:\PythonProjects\esis-auto-gui\controllers\email_controller\configs\tracked_email_data.json"
 CONFIG_FILE_PATH = r"C:\PythonProjects\esis-auto-gui\controllers\email_controller\configs\client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
-
-
-#
 
 
 class EmailTrackerController:

@@ -1,15 +1,14 @@
-import win32com.client
 from typing import List
 import asyncio
 from kivy.uix.screenmanager import Screen
-import win32com.client
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
-from controllers.email_controller.scripts import EmailItem, main
+from controllers.email_controller.email_item_class import EmailItem
 from controllers.main_email_controller import EmailTrackerController
+from gui.email_window.details_popup import open_details
 
 
 KV = """
@@ -33,6 +32,8 @@ KV = """
                     style: "filled"
                     theme_bg_color: "Custom"
                     text_color: 1, 1, 1, 1
+                    halign: "center"
+                    valign: "middle"
                     size_hint_y: 1
                     on_release: root.controller.show_popup()
 
@@ -64,56 +65,38 @@ KV = """
     size_hint_y: None
     height: dp(40)
 
-    #TODO: all these needs to be centered
-
     Label:
         text: root.email_id
         size_hint_x: 0.2
-        halign: 'left'
+        halign: 'center'
         valign: 'middle'
         text_size: self.size
         padding_x: dp(5)
 
     Label:
-        text: "<Email Subject>"
-        size_hint_x: 0.1  # change
-        halign: 'left'
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
-
-    Label:
-        text: "<SENDER NAME>"
-        size_hint_x: 0.1  # change
-        halign: 'left'
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
-
-    Label:
-        text: "<Company Name>"
-        size_hint_x: 0.1  # change
-        halign: 'left'
+        text: root.email_count
+        size_hint_x: 0.2
+        halign: 'center'
         valign: 'middle'
         text_size: self.size
         padding_x: dp(5)
 
     MDButton:
         style: "filled"
-        on_release: root.open_email()
+        on_release: root.open_details()
         size_hint_x: 0.2
         pos_hint: {'center_y': 0.5}
         theme_bg_color: "Custom"
         md_bg_color: 0.3, 0.3, 0.3, 1
 
         MDButtonText:
-            text: "Open Last Mail"
+            text: "Mails"
             theme_text_color: "Custom"
             text_color: "white"
 
     MDButton:
         style: "filled"
-        on_release: root.controller.send_followup_email(root.email_item_obj)
+        on_release: root.send_followup_email()
         size_hint_x: 0.2
         pos_hint: {'center_y': 0.5}
         theme_bg_color: "Custom"
@@ -132,14 +115,13 @@ class EmailTrackerRow(BoxLayout):
     email_count = StringProperty()
     email_item_obj = ObjectProperty()
 
-    def open_email(self):
-        if not self.email_item_obj.email_location:
-            # TODO: notify the user that there is no location
-            return
-        outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-        entry_id, store_id = self.email_item_obj.email_location
-        email_item = outlook.GetItemFromID(entry_id, store_id)
-        email_item.display()
+    def open_details(self):
+        open_details(
+            {
+                "email_id": self.email_id,
+                "email_item_obj": self.email_item_obj,
+            }
+        )
 
     def send_follow_up_email(self):
         pass
@@ -168,7 +150,16 @@ class EmailTrackerWindow(Screen):
 
     def build_rows(self, email_list: List[EmailItem]):
         self.controller.LOGGER.info("Building rows...")
-        self.ids.tracker_row.data = [email_item.to_dict() for email_item in email_list]
+
+        sorted_email_list = sorted(
+            email_list,
+            key=lambda email_item: int(email_item.email_count),
+            reverse=True,
+        )
+
+        self.ids.tracker_row.data = [
+            email_item.to_dict() for email_item in sorted_email_list
+        ]
 
     def outlook_email_listener_wrapper(self, dt):
         if self.start_up_task.done():
