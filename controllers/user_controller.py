@@ -18,7 +18,7 @@ class UserAPI:
             "username": str(username),
             "password": str(password),
         }
-        self.login()
+        # self.login()
         self._is_logged_in = False
 
     def __repr__(self) -> str:

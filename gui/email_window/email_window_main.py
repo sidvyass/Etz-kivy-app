@@ -1,4 +1,5 @@
 import win32com.client
+from typing import List
 import asyncio
 from kivy.uix.screenmanager import Screen
 import win32com.client
@@ -7,7 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.lang import Builder
-from controllers.email_controller.scripts import main
+from controllers.email_controller.scripts import EmailItem, main
 from controllers.main_email_controller import EmailTrackerController
 
 
@@ -74,22 +75,6 @@ KV = """
         padding_x: dp(5)
 
     Label:
-        text: root.reply_count
-        size_hint_x: 0.1
-        halign: 'left'
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
-
-    Label:
-        text: root.last_reply_date
-        size_hint_x: 0.2
-        halign: 'left'
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
-
-    Label:
         text: "<Email Subject>"
         size_hint_x: 0.1  # change
         halign: 'left'
@@ -144,13 +129,8 @@ KV = """
 # TODO: the button here should be disabled if there are no emails to be found
 class EmailTrackerRow(BoxLayout):
     email_id = StringProperty()
-    reply_count = StringProperty()
-    last_reply_date = StringProperty()
-    controller = ObjectProperty()
+    email_count = StringProperty()
     email_item_obj = ObjectProperty()
-    # row_data = ObjectProperty()
-    # parent_widget = ObjectProperty()
-    # email_obj = ObjectProperty()
 
     def open_email(self):
         if not self.email_item_obj.email_location:
@@ -161,6 +141,12 @@ class EmailTrackerRow(BoxLayout):
         email_item = outlook.GetItemFromID(entry_id, store_id)
         email_item.display()
 
+    def send_follow_up_email(self):
+        pass
+
+    def open_all_emails(self):
+        pass
+
 
 class EmailTrackerWindow(Screen):
     controller = ObjectProperty()
@@ -168,23 +154,27 @@ class EmailTrackerWindow(Screen):
     def __init__(self, controller, **kwargs) -> None:
         super(EmailTrackerWindow, self).__init__(**kwargs)
         self.controller: EmailTrackerController = controller
+        self.start_up_task = asyncio.create_task(self.controller.on_start_up(self))
 
     def on_enter(self, *args):
-        # TODO: we schedule the task to start scraping here
-
-        asyncio.create_task(self.controller.on_start_up())
-
+        self.background_tasks = Clock.schedule_interval(
+            self.outlook_email_listener_wrapper, 5
+        )
         return super().on_enter(*args)
 
     def on_leave(self, *args):
-        # TODO: end task to scrape emails here
+        self.background_tasks.cancel()
         return super().on_leave(*args)
 
-    # TEST:
-    def outlook_listener_wrapper(self):
-        # we run this with clock every minute
+    def build_rows(self, email_list: List[EmailItem]):
+        self.controller.LOGGER.info("Building rows...")
+        self.ids.tracker_row.data = [email_item.to_dict() for email_item in email_list]
 
-        asyncio.create_task(self.controller.listen_for_emails())
+    def outlook_email_listener_wrapper(self, dt):
+        if self.start_up_task.done():
+            asyncio.create_task(self.controller.listen_for_emails())
+        else:
+            self.controller.LOGGER.info("skipping as startup is still not complete")
 
 
 Builder.load_string(KV)

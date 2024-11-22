@@ -4,5 +4,6 @@ database/config.yaml
 testing/
 *.md
 *.png
+*.json
 *.xlsx
 tasks.md

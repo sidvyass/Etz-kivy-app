@@ -21,10 +21,12 @@ from controllers.login_controller import LoginController
 from controllers.esis_auto_controller import EsisAutoController
 from gui.esis_auto_window import EsisAutoGUI
 from gui.home_window import HomeWindow
+from gui.email_window.loading_screen import LoadingScreen
 from controllers.home_controller import HomeController
 
-from gui.email_window import EmailTrackerWindow
-from controllers.email_controller import EmailTrackerController
+from gui.email_window.email_window_main import EmailTrackerWindow
+from controllers.main_email_controller import EmailTrackerController
+from controllers.email_controller.scripts import main as script
 
 
 class EsisAutoApp(MDApp):
@@ -37,17 +39,9 @@ class EsisAutoApp(MDApp):
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
-        # FOR_LIVE:
-        # controller = LoginController(self)
-        # view = LoginWindow(controller=controller)
+        controller = LoginController(self)
+        view = LoginWindow(controller=controller)
 
-        # TEST:
-        # controller = EsisAutoController(self, UserAPI("60009", "67220"))
-        # view = EsisAutoGUI(controller)
-
-        # TEST: email tracker
-        controller = EmailTrackerController()
-        view = EmailTrackerWindow(controller=controller)
         self.screen_manager.add_widget(view)
 
         # notifications
@@ -70,6 +64,12 @@ class EsisAutoApp(MDApp):
 
         self.esis_window_controller = EsisAutoController(self, user)
         self.esis_view = EsisAutoGUI(self.esis_window_controller)
+
+        self.loading_screen = LoadingScreen()
+        self.screen_manager.add_widget(self.loading_screen)
+
+        self.email_controller = EmailTrackerController(self, user, self.loading_screen)
+        self.email_tracker_view = EmailTrackerWindow(controller=self.email_controller)
 
         self.screen_manager.add_widget(self.esis_view)
         self.screen_manager.add_widget(self.home_window)
@@ -138,4 +138,5 @@ class EsisAutoApp(MDApp):
 
 
 if __name__ == "__main__":
+
     asyncio.run(EsisAutoApp().async_run(async_lib="asyncio"))
