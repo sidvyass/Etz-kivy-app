@@ -4,7 +4,7 @@ from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivymd.app import MDApp
 from controllers.user_controller import UserAPI
 from gui.email_window.email_window_main import EmailTrackerWindow
-from controllers.main_email_controller import EmailTrackerController
+from controllers.email_controller.main_email_controller import EmailTrackerController
 from gui.email_window.loading_screen import LoadingScreen
 
 

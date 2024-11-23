@@ -11,8 +11,8 @@ from controllers.base_logger import getlogger
 from controllers.email_controller.scripts import main
 
 
-DATA_FILE_PATH = r"C:\PythonProjects\esis-auto-gui\controllers\email_controller\configs\tracked_email_data.json"
-CONFIG_FILE_PATH = r"C:\PythonProjects\esis-auto-gui\controllers\email_controller\configs\client_data.json"
+DATA_FILE_PATH = r".\controllers\email_controller\configs\tracked_email_data.json"
+CONFIG_FILE_PATH = r".\controllers\email_controller\configs\client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
 
 
@@ -29,6 +29,9 @@ class EmailTrackerController:
         Runs to either build objects back up or start running the start up script.
         :param window_inst Screen(KivyMD): The instance of the GUI.
         """
+
+        # TODO: ask the user to supply the file
+        # TODO: ask the user before running the script
 
         if not (os.path.exists(DATA_FILE_PATH) and os.path.exists(CONFIG_FILE_PATH)):
             await self._run_indexing_script()
@@ -52,6 +55,7 @@ class EmailTrackerController:
         """
         Wrapper to run the script that scrapes outlook and builds data files.
         """
+
         filepaths = {
             "tracked_emails": DATA_FILE_PATH,
             "config_file": CONFIG_FILE_PATH,
@@ -173,6 +177,10 @@ class EmailTrackerController:
                     msg.Subject,
                     str(msg.ReceivedTime),
                     (msg.EntryID, inbox.StoreID),
+                    msg.Attachments.Count,
                 )
             )
             self.LOGGER.info(f"Appended email from {msg.SenderEmailAddress} to obj.")
+
+    def search(self, window_inst):
+        pass

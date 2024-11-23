@@ -1,7 +1,7 @@
 from typing import Dict
 import win32com.client
 from kivy.lang import Builder
-from kivy.properties import StringProperty, ObjectProperty
+from kivy.properties import StringProperty, ObjectProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
@@ -25,6 +25,9 @@ KV = """
         width: dp(150)
     Label:
         text: root.date
+        width: dp(150)
+    Label:
+        text: root.attachment_count
         width: dp(150)
     Button:
         text: "Open Email"
@@ -56,6 +59,9 @@ KV = """
                 width: dp(150)
             Label:
                 text: "Date"
+                width: dp(150)
+            Label:
+                text: "Attachment Count"
                 width: dp(150)
             Label:
                 text: "Actions"
@@ -103,7 +109,6 @@ KV = """
                     text: "Stop Tracking"
                     theme_text_color: "Custom"
                     text_color: "white"
-
 """
 
 
@@ -114,6 +119,7 @@ class EmailDetailRow(BoxLayout):
     subject = StringProperty()
     date = StringProperty()
     email_location = ObjectProperty()
+    attachment_count = StringProperty()
 
     def open_email(self):
         if not self.email_location:
@@ -139,12 +145,13 @@ class EmailPopup(Popup):
                 {"subject": "No emails found", "date": "", "email_location": ""}
             )
         for email_details in email_data:
-            subject, date, location = email_details
+            subject, date, location, attachment_count = email_details
             data.append(
                 {
                     "subject": subject,
                     "date": str(date),  # TODO: parse this before assignment
                     "email_location": location,
+                    "attachment_count": str(attachment_count),
                 }
             )
 

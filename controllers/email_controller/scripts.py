@@ -143,26 +143,26 @@ async def main(progress_bar_func, filepaths: Dict[str, str]) -> None:
 
     if not tracked_emails_file or not config_file_path:
         LOGGER.critical("Invalid file paths provided. Exiting.")
-        return
+        raise OSError("Invalid file paths provided. Exiting.")
 
     progress_bar_func(update_text="Recording last email...")
 
     latest_email_entry_id = save_entry_id_of_latest_email()
     if not latest_email_entry_id:
         LOGGER.error("No latest email found. Exiting.")
-        return
+        raise IOError("FATAL: Could not scrape last entry ID.")
 
     start_time = time.perf_counter()
 
     email_item_list = await fetch_email_data()
     if not email_item_list:
         LOGGER.error("Email data could not be fetched. Exiting.")
-        return
+        raise IOError("Database connection returned no emails.")
 
     success = await process_emails(email_item_list, progress_bar_func)
     if not success:
-        LOGGER.error("Email processing failed. Exiting.")
-        return
+        LOGGER.critical("Email processing failed. Exiting.")
+        raise IOError("FATAL: Error while reading the emails.")
 
     save_status = await save_configuration(
         tracked_emails_file,
@@ -172,7 +172,7 @@ async def main(progress_bar_func, filepaths: Dict[str, str]) -> None:
     )
     if not save_status:
         LOGGER.error("Failed to save configuration. Exiting.")
-        return
+        raise OSError("Could not save file.")
 
     elapsed_time = time.perf_counter() - start_time
     LOGGER.info(f"Finished in {elapsed_time:.2f} seconds.")

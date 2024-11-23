@@ -13,12 +13,14 @@ class EmailItem:
         email_count: int = 0,
         company_name: Optional[str] = None,
         fullname: Optional[str] = None,
-        emails_list: Optional[List[Tuple[str, str, Tuple[str, str]]]] = None,
+        emails_list: Optional[List[Tuple[str, str, Tuple[str, str], int]]] = None,
+        attachment_count: Optional[int] = None,
     ):
         self.LOGGER = getlogger("Email Item")
         self.email_id = email_id
         self.company_name = company_name
         self.fullname = fullname
+        self.attachment_count = None if not attachment_count else attachment_count
         self.email_count = email_count
         self.emails_list = (
             emails_list if emails_list else []
@@ -57,6 +59,7 @@ class EmailItem:
                             item.Subject,
                             str(item.ReceivedTime),
                             (item.EntryID, inbox.StoreID),
+                            item.Attachments.Count,
                         )
                     )
             except Exception as e:
@@ -72,4 +75,6 @@ class EmailItem:
             "email_id": self.email_id,
             "email_count": str(self.email_count),
             "email_item_obj": self.emails_list,
+            "name": self.fullname if self.fullname else "placeholder",
+            "is_active": False,
         }
