@@ -1,7 +1,9 @@
+from typing import List
 import os
 import asyncio
 import json
 import aiofiles
+from kivy.uix.popup import ModalView
 import pythoncom
 import win32com.client
 from typing import Dict, Any
@@ -9,6 +11,7 @@ from controllers.user_controller import UserAPI  # only for type hints
 from controllers.email_controller.email_item_class import EmailItem
 from controllers.base_logger import getlogger
 from controllers.email_controller.scripts import main
+from gui.email_window.config_popup import RV
 
 
 DATA_FILE_PATH = r".\controllers\email_controller\configs\tracked_email_data.json"

@@ -1,4 +1,10 @@
 from typing import List
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.popup import Popup
 import asyncio
 from kivy.uix.screenmanager import Screen
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty
@@ -9,6 +15,7 @@ from kivy.lang import Builder
 from controllers.email_controller.email_item_class import EmailItem
 from controllers.email_controller.main_email_controller import EmailTrackerController
 from gui.email_window.details_popup import open_details
+from gui.email_window.config_popup import RV
 
 
 KV = """
@@ -23,11 +30,41 @@ KV = """
                 size_hint_y: 0.05
                 size_hint_x: 1
 
+                MDIconButton:
+                    id: back_button  # Add dustbin button
+                    icon: "arrow-left"
+                    size_hint_y: 1
+                    size_hint_x: 0.05
+                    on_release: root.deselect_everything()
+                    theme_text_color: "Custom"
+                    text_color: 1, 0, 0, 1  # Make it red for visibility
+                    opacity: 0 
+                    disabled: True
+
+                MDIconButton:
+                    id: dustbin_button  # Add dustbin button
+                    icon: "trash-can"
+                    size_hint_y: 1
+                    size_hint_x: 0.05
+                    on_release: root.controller.delete_selected_items()
+                    theme_text_color: "Custom"
+                    text_color: 1, 0, 0, 1  # Make it red for visibility
+                    opacity: 0 
+                    disabled: True
+
                 MDLabel:
                     text: "Email Reply Tracker"
                     halign: "center"
                     valign: "middle"
                     size_hint_y: 1
+
+                MDIconButton:
+                    icon: "cog"
+                    size_hint_y: 1
+                    size_hint_x: 0.05
+                    on_release: root.config_popup()
+                    theme_text_color: "Custom"
+                    text_color: 1, 1, 1, 1
 
             # Search bar
             BoxLayout:
@@ -118,7 +155,7 @@ KV = """
                 do_scroll_x: False  # Disable horizontal scrolling
                 do_scroll_y: True
 
-                RecycleBoxLayout:
+                SelectableRecycleBoxLayout:
                     id: table_layout
                     orientation: 'vertical'
                     default_size: None, dp(60)
@@ -127,6 +164,8 @@ KV = """
                     size_hint_x: 1  # Ensure full width
                     height: self.minimum_height
                     spacing: dp(0)
+                    multiselect: True
+                    touch_multiselect: True
 
 <EmailTrackerRow>:
     orientation: 'horizontal'
@@ -137,8 +176,7 @@ KV = """
     MDCheckbox:
         id: row_checkbox
         size_hint_x: 0.01
-        active: root.is_active
-        on_active: root.change_is_active(self, self.active)
+        active: root.is_selected
         pos_hint: {'center_y': 0.5}
 
     Label:
@@ -209,13 +247,23 @@ KV = """
 # TODO: headers dont align with the rows. Needs UI fixing.
 
 
+class SelectableRecycleBoxLayout(
+    FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout
+):
+    """Adds selection and focus behavior to the view."""
+
+
 # TODO: the button here should be disabled if there are no emails to be found
-class EmailTrackerRow(BoxLayout):
+class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
     email_id = StringProperty()
     email_count = StringProperty()
     name = StringProperty()
     email_item_obj = ObjectProperty()
-    is_active = BooleanProperty()
+    is_selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def open_details(self):
         open_details(
@@ -231,8 +279,25 @@ class EmailTrackerRow(BoxLayout):
     def edit_info(self):
         pass
 
-    def change_is_active(self, checkbox, value):
-        self.selected = value
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        self.ids.row_checkbox.active = self.is_selected
+        return super().refresh_view_attrs(rv, index, data)
+
+    def on_touch_down(self, touch):  # type: ignore
+        """Add selection on touch down"""
+        if super(EmailTrackerRow, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            self.is_selected = not self.is_selected
+            return self.parent.select_with_touch(self.index, touch)
+
+    def apply_selection(self, rv, index, is_selected):
+        self.is_selected = is_selected
+        self.ids.row_checkbox.active = is_selected
+        if self.is_selected:
+            rv.parent.parent.parent.on_selection()  # MDBoxLayout, Screen
+        return super().apply_selection(rv, index, is_selected)
 
 
 class EmailTrackerWindow(Screen):
@@ -259,7 +324,7 @@ class EmailTrackerWindow(Screen):
             email_list,
             key=lambda email_item: int(email_item.email_count),
             reverse=True,
-        )
+        )  # most replies first
         self.ids.tracker_row.data = [
             email_item.to_dict() for email_item in sorted_email_list
         ]
@@ -269,6 +334,27 @@ class EmailTrackerWindow(Screen):
             asyncio.create_task(self.controller.listen_for_emails())
         else:
             self.controller.LOGGER.info("skipping as startup is still not complete")
+
+    def config_popup(self):
+        popup = Popup(
+            title="RecycleView Popup",
+            content=RV(
+                email_ids=[key for key in self.controller.tracked_emails.keys()]
+            ),
+            size_hint=(0.8, 0.8),
+            auto_dismiss=True,
+        )
+        popup.open()
+
+    def on_selection(self):
+        self.ids.dustbin_button.opacity = 1
+        self.ids.dustbin_button.disabled = False
+        self.ids.back_button.opacity = 1
+        self.ids.back_button.disabled = False
+
+    # populate this
+    def deselect_everything(self):
+        pass
 
 
 Builder.load_string(KV)

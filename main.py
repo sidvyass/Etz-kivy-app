@@ -66,11 +66,11 @@ class EsisAutoApp(MDApp):
         self.esis_view = EsisAutoGUI(self.esis_window_controller)
 
         self.loading_screen = LoadingScreen()
-        self.screen_manager.add_widget(self.loading_screen)
 
         self.email_controller = EmailTrackerController(self, user, self.loading_screen)
         self.email_tracker_view = EmailTrackerWindow(controller=self.email_controller)
 
+        self.screen_manager.add_widget(self.loading_screen)
         self.screen_manager.add_widget(self.esis_view)
         self.screen_manager.add_widget(self.home_window)
         self.screen_manager.current = "home_window"
