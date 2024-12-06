@@ -4,14 +4,18 @@ import time
 import asyncio
 import json
 import aiofiles
+import dotenv
+import os
 from pydantic import BaseModel, EmailStr, ValidationError
 from typing import List, Dict, Optional
 from controllers.email_controller.email_item_class import EmailItem
 from controllers.base_logger import getlogger
 
 
-# TODO: this needs to come from dotenv
-DSN = "DRIVER={SQL Server};SERVER=ETZ-SQL;DATABASE=SANDBOX;Trusted_Connection=yes"
+dotenv.load_dotenv()
+
+
+DSN = os.getenv("DSN")
 LOGGER = getlogger("Start up script")
 
 
@@ -43,7 +47,6 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
     for name, email_id in values:
         try:
             validated_email = EmailItemModel(email_id=email_id)
-            LOGGER.info(name)
             email_item_list.append(EmailItem(validated_email.email_id, fullname=name))
         except ValidationError:
             LOGGER.debug(f"Invalid email found: {email_id}")

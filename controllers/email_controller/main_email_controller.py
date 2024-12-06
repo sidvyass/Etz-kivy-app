@@ -19,9 +19,8 @@ from controllers.email_controller.scripts import main
 dotenv.load_dotenv()
 
 
-# TODO: these need to go inside .env file
-DATA_FILE_PATH = r".\controllers\email_controller\configs\tracked_email_data.json"
-CONFIG_FILE_PATH = r".\controllers\email_controller\configs\client_data.json"
+DATA_FILE_PATH = os.getenv("DATA_FILE_PATH")
+CONFIG_FILE_PATH = os.getenv("CONFIG_FILE_PATH")
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
 
 
@@ -38,6 +37,9 @@ class EmailTrackerController:
         Runs to either build objects back up or start running the start up script.
         :param window_inst Screen(KivyMD): The instance of the GUI.
         """
+
+        assert DATA_FILE_PATH
+        assert CONFIG_FILE_PATH
 
         # TODO: ask the user to supply the file
         # TODO: ask the user before running the script

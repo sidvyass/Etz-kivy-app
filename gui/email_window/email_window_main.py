@@ -1,6 +1,4 @@
 import asyncio
-import os
-from dotenv import load_dotenv
 from typing import List
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
@@ -19,9 +17,6 @@ from controllers.email_controller.main_email_controller import EmailTrackerContr
 from gui.email_window.details_popup import open_details
 from gui.email_window.config_popup import RV
 from gui.email_window.edit_info_popup import EditInfoPopup
-
-
-load_dotenv()
 
 
 KV = """
@@ -104,61 +99,61 @@ KV = """
                         theme_text_color: "Custom"
                         text_color: "white"
 
-            BoxLayout:
-                size_hint_y: 0.05
-                size_hint_x: 1  # Ensure full width
-                orientation: 'horizontal'
-                Label:
-                    text: "  "
-                    size_hint_x: 0.05
-                    halign: 'center'  # Match row labels
-                    valign: 'middle'
-                    padding_x: dp(5)
+
+            GridLayout:
+                size_hint_y: None
+                size_hint_x: 1
+                height: dp(40)
+                cols: 5
+                spacing: dp(5)
 
                 Label:
                     text: "Name"
-                    size_hint_x: 0.05
-                    halign: 'left'  # Match row labels
+                    size_hint_x: 0.2
+                    halign: 'center'
                     valign: 'middle'
                     text_size: self.size
-                    padding_x: dp(5)
-
-                Label:
-                    text: " "
-                    size_hint_x: 0.05
-                    halign: 'center'  # Match row labels
-                    valign: 'middle'
                     padding_x: dp(5)
 
                 Label:
                     text: "Email ID"
                     size_hint_x: 0.2
-                    halign: 'left'  # Match row labels
+                    halign: 'center'
                     valign: 'middle'
                     text_size: self.size
                     padding_x: dp(5)
 
                 Label:
-                    text: "Attachment Count"
-                    size_hint_x: 0.05
-                    halign: 'center'  # Match row labels
+                    text: "Inbox #"
+                    size_hint_x: 0.1
+                    halign: 'center'
+                    valign: 'middle'
+                    text_size: self.size
+                    padding_x: dp(5)
+
+                Label:
+                    text: "Outbox #"
+                    size_hint_x: 0.1
+                    halign: 'center'
                     valign: 'middle'
                     text_size: self.size
                     padding_x: dp(5)
 
                 Label:
                     text: "Actions"
-                    halign: 'center'  # Match row labels
+                    size_hint_x: 0.5
+                    halign: 'center'
                     valign: 'middle'
-                    size_hint_x: 0.1
+                    text_size: self.size
                     padding_x: dp(5)
 
+            # RecycleView Section
             RecycleView:
                 id: tracker_row
                 viewclass: 'EmailTrackerRow'
                 size_hint_y: 0.8
                 size_hint_x: 1
-                do_scroll_x: False  # Disable horizontal scrolling
+                do_scroll_x: False
                 do_scroll_y: True
 
                 SelectableRecycleBoxLayout:
@@ -170,77 +165,91 @@ KV = """
                     size_hint_x: 1  # Ensure full width
                     height: self.minimum_height
                     spacing: dp(0)
-                    multiselect: True
-                    touch_multiselect: True
 
 <EmailTrackerRow>:
-    orientation: 'horizontal'
-    size_hint_x: 1  # Ensure full width
-    size_hint_y: None
-    height: dp(40)
+    GridLayout:
+        cols: 5
+        size_hint_y: None
+        size_hint_x: 1
+        height: dp(40)
+        spacing: dp(5)
 
-    Label:
-        text: root.name
-        size_hint_x: 0.05
-        halign: 'center'  # Match header labels
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
+        Label:
+            text: root.name
+            size_hint_x: 0.2
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            padding_x: dp(5)
 
-    Label:
-        text: root.email_id
-        size_hint_x: 0.2
-        halign: 'center'  # Match header labels
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
+        Label:
+            text: root.email_id
+            size_hint_x: 0.2
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            padding_x: dp(5)
 
-    Label:
-        text: root.email_count
-        size_hint_x: 0.05
-        halign: 'center'  # Match header labels
-        valign: 'middle'
-        text_size: self.size
-        padding_x: dp(5)
+        Label:
+            text: root.email_count
+            size_hint_x: 0.1
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            padding_x: dp(5)
 
-    MDButton:
-        style: "filled"
-        on_release: root.open_details()
-        size_hint_x: 0.1
-        pos_hint: {'center_y': 0.5}
-        theme_bg_color: "Custom"
-        md_bg_color: 0.3, 0.3, 0.3, 1
+        Label:
+            text: root.outgoing_email_count
+            size_hint_x: 0.1
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            padding_x: dp(5)
 
-        MDButtonText:
-            text: "Mails"
-            theme_text_color: "Custom"
-            text_color: "white"
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_x: 0.5
+            padding: dp(10)
+            spacing: dp(10)
 
-    MDButton:
-        style: "filled"
-        on_release: root.send_follow_up_email()
-        size_hint_x: 0.2
-        pos_hint: {'center_y': 0.5}
-        theme_bg_color: "Custom"
-        md_bg_color: 0.3, 0.3, 0.3, 1
+            Widget:  # spacer
+                size_hint_x: 0.02
 
-        MDButtonText:
-            text: "Send Follow Up"
-            theme_text_color: "Custom"
-            text_color: "white"
+            MDButton:
+                on_release: root.open_details()
 
-    MDButton:
-        style: "filled"
-        on_release: root.edit_info()
-        size_hint_x: 0.1
-        pos_hint: {'center_y': 0.5}
-        theme_bg_color: "Custom"
-        md_bg_color: 0.3, 0.3, 0.3, 1
+                MDButtonText:
+                    text: "Mails"
+                    theme_text_color: "Custom"
+                    text_color: "white"
 
-        MDButtonText:
-            text: "Edit Info"
-            theme_text_color: "Custom"
-            text_color: "white"
+            MDButton:
+                on_release: root.open_outgoing_details()
+
+                MDButtonText:
+                    text: "Outbox"
+                    theme_text_color: "Custom"
+                    text_color: "white"
+
+            MDButton:
+                on_release: root.send_follow_up_email()
+
+                MDButtonText:
+                    text: "Send Follow Up"
+                    theme_text_color: "Custom"
+                    text_color: "white"
+
+            MDButton:
+                on_release: root.edit_info()
+
+                MDButtonText:
+                    text: "Edit Info"
+                    theme_text_color: "Custom"
+                    text_color: "white"
+
+            Widget:  # spacer
+                size_hint_x: 0.02
+
 """
 
 # BUG: The following classes are so that we can enable selection from within the recycle view, however that is a pain in the butt.
@@ -260,6 +269,8 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
     email_id = StringProperty()
     email_count = StringProperty()
     name = StringProperty()
+    outgoing_emails = ObjectProperty()
+    outgoing_email_count = StringProperty()
     email_item_obj = ObjectProperty()
     is_selected = BooleanProperty()
     selectable = BooleanProperty(True)
@@ -273,6 +284,14 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
             {
                 "email_id": self.email_id,
                 "email_item_obj": self.email_item_obj,
+            }
+        )
+
+    def open_outgoing_details(self):
+        open_details(
+            {
+                "email_id": self.email_id,
+                "email_item_obj": self.outgoing_emails,
             }
         )
 
@@ -325,7 +344,7 @@ class EmailTrackerWindow(Screen):
         self.controller.LOGGER.info("Building rows...")
         sorted_email_list = sorted(
             email_list,
-            key=lambda email_item: int(email_item.email_count),
+            key=lambda email_item: int(email_item.incoming_email_count),
             reverse=True,
         )  # most replies first
         self.ids.tracker_row.data = [
