@@ -1,19 +1,25 @@
-from typing import List
+from fuzzywuzzy import fuzz
+import pyodbc
+from typing import List, Optional, Tuple
 import os
 import asyncio
 import json
 import aiofiles
-from kivy.uix.popup import ModalView
 import pythoncom
 import win32com.client
+import dotenv
+import os
 from typing import Dict, Any
 from controllers.user_controller import UserAPI  # only for type hints
 from controllers.email_controller.email_item_class import EmailItem
 from controllers.base_logger import getlogger
 from controllers.email_controller.scripts import main
-from gui.email_window.config_popup import RV
 
 
+dotenv.load_dotenv()
+
+
+# TODO: these need to go inside .env file
 DATA_FILE_PATH = r".\controllers\email_controller\configs\tracked_email_data.json"
 CONFIG_FILE_PATH = r".\controllers\email_controller\configs\client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
@@ -46,8 +52,7 @@ class EmailTrackerController:
             self.LOGGER.critical("Entry ID for last email is None.")
             return
 
-        data_buf = await self.read_json_file(DATA_FILE_PATH)
-        await self._build_objects(data_buf)
+        await self._build_objects()
 
         self.LOGGER.info("Initial setup complete. Loading email window...")
         self.main_app.screen_manager.current = "email_window"
@@ -75,12 +80,14 @@ class EmailTrackerController:
             # TODO: notify the user of the error here
             return None
 
-    async def _build_objects(self, data_dict: dict):
+    async def _build_objects(self) -> None:
         """
         Runs on startup to build objects from the stored json file.
         """
 
-        for email_id, value_dict in data_dict.items():
+        data_buf = await self.read_json_file(DATA_FILE_PATH)
+
+        for email_id, value_dict in data_buf.items():
             try:
                 required_keys = {"email_id", "email_count"}
                 if not required_keys.issubset(value_dict.keys()):
@@ -186,4 +193,47 @@ class EmailTrackerController:
             self.LOGGER.info(f"Appended email from {msg.SenderEmailAddress} to obj.")
 
     def search(self, window_inst):
-        pass
+        if window_inst.ids.search_button_text.text == "Reset":
+            window_inst.build_rows(list(self.tracked_emails.values()))
+            window_inst.ids.search_field.text = ""
+            window_inst.ids.search_button_text.text = "Search"
+            window_inst.ids.search_button.md_bg_color = (0.3, 0.3, 0.3, 1)
+            return
+
+        search_value = window_inst.ids.search_field.text
+
+        if search_value:
+            data: List[EmailItem] = []  # search results
+            for email_id in self.tracked_emails.keys():
+                if fuzz.ratio(email_id, search_value) > 30:
+                    data.append(self.tracked_emails[email_id])
+
+            if len(data) > 1:
+                window_inst.ids.search_button.md_bg_color = (1, 0, 0, 1)
+                window_inst.ids.search_button_text.text = "Reset"
+                window_inst.build_rows(data)
+
+            else:
+                self.main_app.show_small_notification("Did not find any results...")
+
+        else:
+            self.main_app.show_small_notification("Enter a valud value.")
+
+    def fetch_party_data(self, email_id: str) -> Optional[Tuple]:
+        """
+        Will fetch the first value that matches the email ID from the database.
+
+        :param email_id: email id of the value to fetch
+        :return: name, cellphone, title, last_audit_date
+        """
+
+        with pyodbc.connect(os.getenv("DSN")) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"SELECT Name, CellPhone, Title, LastAuditDate, Customer, Supplier FROM Party WHERE Email='{email_id}';"
+                )
+                result = cur.fetchone()
+                if result:
+                    name, cellphone, title, last_audit_date, customer, supplier = result
+                    return name, cellphone, title, last_audit_date, customer, supplier
+                return None

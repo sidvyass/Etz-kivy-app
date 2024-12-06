@@ -6,4 +6,5 @@ testing/
 *.png
 *.json
 *.xlsx
+.env
 tasks.md

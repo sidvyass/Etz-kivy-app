@@ -1,3 +1,6 @@
+import asyncio
+import os
+from dotenv import load_dotenv
 from typing import List
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
@@ -5,7 +8,6 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.popup import Popup
-import asyncio
 from kivy.uix.screenmanager import Screen
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -16,6 +18,10 @@ from controllers.email_controller.email_item_class import EmailItem
 from controllers.email_controller.main_email_controller import EmailTrackerController
 from gui.email_window.details_popup import open_details
 from gui.email_window.config_popup import RV
+from gui.email_window.edit_info_popup import EditInfoPopup
+
+
+load_dotenv()
 
 
 KV = """
@@ -31,7 +37,7 @@ KV = """
                 size_hint_x: 1
 
                 MDIconButton:
-                    id: back_button  # Add dustbin button
+                    id: back_button
                     icon: "arrow-left"
                     size_hint_y: 1
                     size_hint_x: 0.05
@@ -42,13 +48,13 @@ KV = """
                     disabled: True
 
                 MDIconButton:
-                    id: dustbin_button  # Add dustbin button
+                    id: dustbin_button
                     icon: "trash-can"
                     size_hint_y: 1
                     size_hint_x: 0.05
-                    on_release: root.controller.delete_selected_items()
+                    on_release: root.controller.delete_selected_items(root)
                     theme_text_color: "Custom"
-                    text_color: 1, 0, 0, 1  # Make it red for visibility
+                    text_color: 1, 0, 0, 1
                     opacity: 0 
                     disabled: True
 
@@ -173,12 +179,6 @@ KV = """
     size_hint_y: None
     height: dp(40)
 
-    MDCheckbox:
-        id: row_checkbox
-        size_hint_x: 0.01
-        active: root.is_selected
-        pos_hint: {'center_y': 0.5}
-
     Label:
         text: root.name
         size_hint_x: 0.05
@@ -243,6 +243,8 @@ KV = """
             text_color: "white"
 """
 
+# BUG: The following classes are so that we can enable selection from within the recycle view, however that is a pain in the butt.
+# Solving later.
 
 # TODO: headers dont align with the rows. Needs UI fixing.
 
@@ -259,8 +261,9 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
     email_count = StringProperty()
     name = StringProperty()
     email_item_obj = ObjectProperty()
-    is_selected = BooleanProperty(False)
+    is_selected = BooleanProperty()
     selectable = BooleanProperty(True)
+    controller = ObjectProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -277,27 +280,27 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
         pass
 
     def edit_info(self):
-        pass
+        # dont need loading screen, this is p fast.
+        data = self.controller.fetch_party_data(self.email_id)
+        name, cellphone, title, last_audit_date, customer, supplier = data
 
-    def refresh_view_attrs(self, rv, index, data):
-        self.index = index
-        self.ids.row_checkbox.active = self.is_selected
-        return super().refresh_view_attrs(rv, index, data)
+        if customer and supplier:
+            cus_sup_value = "Customer & Supplier"
+        elif customer:
+            cus_sup_value = "Customer"
+        elif supplier:
+            cus_sup_value = "Supplier"
+        else:
+            cus_sup_value = ""
 
-    def on_touch_down(self, touch):  # type: ignore
-        """Add selection on touch down"""
-        if super(EmailTrackerRow, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            self.is_selected = not self.is_selected
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        self.is_selected = is_selected
-        self.ids.row_checkbox.active = is_selected
-        if self.is_selected:
-            rv.parent.parent.parent.on_selection()  # MDBoxLayout, Screen
-        return super().apply_selection(rv, index, is_selected)
+        EditInfoPopup(
+            name=name,
+            email=self.email_id,
+            last_audit_date=last_audit_date if last_audit_date else "",
+            cell_phone=cellphone if cellphone else "",
+            title=title,
+            customer_or_supplier=cus_sup_value,
+        ).open()
 
 
 class EmailTrackerWindow(Screen):
@@ -326,7 +329,8 @@ class EmailTrackerWindow(Screen):
             reverse=True,
         )  # most replies first
         self.ids.tracker_row.data = [
-            email_item.to_dict() for email_item in sorted_email_list
+            {**email_item.to_dict(), "controller": self.controller}
+            for email_item in sorted_email_list
         ]
 
     def outlook_email_listener_wrapper(self, dt):
@@ -339,7 +343,8 @@ class EmailTrackerWindow(Screen):
         popup = Popup(
             title="RecycleView Popup",
             content=RV(
-                email_ids=[key for key in self.controller.tracked_emails.keys()]
+                email_ids=[key for key in self.controller.tracked_emails.keys()],
+                controller=self.controller,
             ),
             size_hint=(0.8, 0.8),
             auto_dismiss=True,

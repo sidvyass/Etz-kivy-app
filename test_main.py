@@ -6,6 +6,7 @@ from controllers.user_controller import UserAPI
 from gui.email_window.email_window_main import EmailTrackerWindow
 from controllers.email_controller.main_email_controller import EmailTrackerController
 from gui.email_window.loading_screen import LoadingScreen
+from gui.email_window.edit_info_popup import EditInfoPopup
 
 
 class EsisAutoApp(MDApp):

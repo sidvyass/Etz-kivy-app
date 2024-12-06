@@ -10,6 +10,7 @@ from controllers.email_controller.email_item_class import EmailItem
 from controllers.base_logger import getlogger
 
 
+# TODO: this needs to come from dotenv
 DSN = "DRIVER={SQL Server};SERVER=ETZ-SQL;DATABASE=SANDBOX;Trusted_Connection=yes"
 LOGGER = getlogger("Start up script")
 
@@ -18,10 +19,11 @@ class EmailItemModel(BaseModel):
     email_id: EmailStr
 
 
-async def fetch_email_data() -> Optional[List[EmailItem]]:
+async def fetch_party_email_data() -> Optional[List[EmailItem]]:
     """
     Fetches email data from the database, validates email addresses, and creates EmailItem objects.
     """
+
     LOGGER.info("Pulling emails from the database...")
     email_item_list: List[EmailItem] = []
     try:
@@ -34,6 +36,8 @@ async def fetch_email_data() -> Optional[List[EmailItem]]:
     except Exception as e:
         LOGGER.critical(f"Database connection error: {e}")
         return None
+
+    # TODO: beyond this it should be a different function
 
     # Validate and create EmailItem objects
     for name, email_id in values:
@@ -154,7 +158,7 @@ async def main(progress_bar_func, filepaths: Dict[str, str]) -> None:
 
     start_time = time.perf_counter()
 
-    email_item_list = await fetch_email_data()
+    email_item_list = await fetch_party_email_data()
     if not email_item_list:
         LOGGER.error("Email data could not be fetched. Exiting.")
         raise IOError("Database connection returned no emails.")

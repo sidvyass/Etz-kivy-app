@@ -1,15 +1,18 @@
 import pythoncom
+import aioodbc
 import win32com.client
 import datetime
 import asyncio
 from typing import Tuple, List, Optional
 from controllers.base_logger import getlogger
 
+DSN = "DRIVER={SQL Server};SERVER=ETZ-SQL;DATABASE=SANDBOX;Trusted_Connection=yes"
+
 
 class EmailItem:
     def __init__(
         self,
-        email_id: str,
+        email_id: str,  # MANDETORY
         email_count: int = 0,
         company_name: Optional[str] = None,
         fullname: Optional[str] = None,
@@ -78,3 +81,13 @@ class EmailItem:
             "name": self.fullname if self.fullname else "placeholder",
             "is_active": False,
         }
+
+    async def get_all_details(self):
+        self.LOGGER.info("getting all details...")
+        async with aioodbc.connect(dsn=DSN) as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    f"SELECT LastAuditDate, LastReviewDate, CustomerOrSupplierSinceDate, Email, CellPhone, Name, Title  FROM Party where Email='{self.email_id}';"
+                )
+                values = await cursor.fetchone()
+        return values

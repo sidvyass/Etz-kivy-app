@@ -8,6 +8,8 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
+from controllers.email_controller.main_email_controller import EmailTrackerController
+
 
 KV = """
 <SelectableLabel>:
@@ -18,6 +20,7 @@ KV = """
         Rectangle:
             pos: self.pos
             size: self.size
+
 <RV>:
     viewclass: 'SelectableLabel'
     SelectableRecycleBoxLayout:
@@ -28,8 +31,16 @@ KV = """
         orientation: 'vertical'
         multiselect: True
         touch_multiselect: True
-"""
 
+    MDIconButton:
+        id: dustbin_button
+        icon: "trash-can"
+        size_hint_y: 1
+        size_hint_x: 0.05
+        on_release: root.delete()
+        theme_text_color: "Custom"
+        text_color: 1, 0, 0, 1
+"""
 
 
 Builder.load_string(KV)
@@ -72,5 +83,12 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
 class RV(RecycleView):
     def __init__(self, **kwargs):
         email_ids = kwargs.pop("email_ids", [])
+        self.controller: EmailTrackerController = kwargs.pop("controller")
         super(RV, self).__init__(**kwargs)
         self.data = [{"text": str(x)} for x in email_ids]
+
+    def delete(self):
+        # get all selectable objs
+        # iterate over them
+        # pass the email_ids selected to the controller's delete function
+        pass
