@@ -43,6 +43,7 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
     for name, email_id in values:
         try:
             validated_email = EmailItemModel(email_id=email_id)
+            LOGGER.info(name)
             email_item_list.append(EmailItem(validated_email.email_id, fullname=name))
         except ValidationError:
             LOGGER.debug(f"Invalid email found: {email_id}")

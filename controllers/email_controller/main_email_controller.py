@@ -42,6 +42,9 @@ class EmailTrackerController:
         # TODO: ask the user to supply the file
         # TODO: ask the user before running the script
 
+        # WARNING: We are building EmailItem objects twice on the first iteration.
+        # first when we scrape outlook and second when we populate the GUI.
+
         if not (os.path.exists(DATA_FILE_PATH) and os.path.exists(CONFIG_FILE_PATH)):
             await self._run_indexing_script()
 
@@ -89,7 +92,7 @@ class EmailTrackerController:
 
         for email_id, value_dict in data_buf.items():
             try:
-                required_keys = {"email_id", "email_count"}
+                required_keys = {"email_id", "email_count", "name"}
                 if not required_keys.issubset(value_dict.keys()):
                     raise ValueError(f"Missing required keys in {value_dict}")
 
@@ -97,6 +100,7 @@ class EmailTrackerController:
                     value_dict["email_id"],
                     email_count=value_dict["email_count"],
                     emails_list=value_dict.get("email_item_obj", []),
+                    fullname=value_dict.get("name", None),
                 )
 
             except Exception as e:
@@ -230,10 +234,26 @@ class EmailTrackerController:
         with pyodbc.connect(os.getenv("DSN")) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    f"SELECT Name, CellPhone, Title, LastAuditDate, Customer, Supplier FROM Party WHERE Email='{email_id}';"
+                    f"SELECT Name, CellPhone, Title, LastAuditDate, Customer, Supplier, PartyPK FROM Party WHERE Email='{email_id}';"
                 )
                 result = cur.fetchone()
                 if result:
-                    name, cellphone, title, last_audit_date, customer, supplier = result
-                    return name, cellphone, title, last_audit_date, customer, supplier
+                    (
+                        name,
+                        cellphone,
+                        title,
+                        last_audit_date,
+                        customer,
+                        supplier,
+                        party_pk,
+                    ) = result
+                    return (
+                        name,
+                        cellphone,
+                        title,
+                        last_audit_date,
+                        customer,
+                        supplier,
+                        party_pk,
+                    )
                 return None

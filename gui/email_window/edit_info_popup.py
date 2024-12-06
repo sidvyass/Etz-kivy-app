@@ -1,6 +1,10 @@
 from kivy.uix.popup import Popup
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivy.lang import Builder
+import os, dotenv
+
+
+dotenv.load_dotenv()
 
 
 KV = """
@@ -201,8 +205,11 @@ class EditInfoPopup(Popup):
     customer_or_supplier = StringProperty()
     cell_phone = StringProperty()
     title = StringProperty()
+    pk = NumericProperty()
 
     def on_save(self):
+        os.getenv("DSN")
+        # modify the party data using PK as the reference.
         pass
 
 

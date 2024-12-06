@@ -282,7 +282,7 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
     def edit_info(self):
         # dont need loading screen, this is p fast.
         data = self.controller.fetch_party_data(self.email_id)
-        name, cellphone, title, last_audit_date, customer, supplier = data
+        name, cellphone, title, last_audit_date, customer, supplier, party_pk = data
 
         if customer and supplier:
             cus_sup_value = "Customer & Supplier"

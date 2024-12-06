@@ -23,7 +23,8 @@ class EmailItem:
         self.email_id = email_id
         self.company_name = company_name
         self.fullname = fullname
-        self.attachment_count = None if not attachment_count else attachment_count
+        self.LOGGER.info(self.fullname)
+        self.attachment_count = attachment_count
         self.email_count = email_count
         self.emails_list = (
             emails_list if emails_list else []
@@ -74,20 +75,11 @@ class EmailItem:
         await loop.run_in_executor(None, _find_emails_sync)
 
     def to_dict(self) -> dict:
+        self.LOGGER.info(self.fullname)
         return {
             "email_id": self.email_id,
             "email_count": str(self.email_count),
             "email_item_obj": self.emails_list,
-            "name": self.fullname if self.fullname else "placeholder",
+            "name": self.fullname if self.fullname else "",
             "is_active": False,
         }
-
-    async def get_all_details(self):
-        self.LOGGER.info("getting all details...")
-        async with aioodbc.connect(dsn=DSN) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    f"SELECT LastAuditDate, LastReviewDate, CustomerOrSupplierSinceDate, Email, CellPhone, Name, Title  FROM Party where Email='{self.email_id}';"
-                )
-                values = await cursor.fetchone()
-        return values
