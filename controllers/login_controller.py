@@ -26,10 +26,10 @@ class LoginController:
         """
 
         # FOR_LIVE:
-        # self.user = UserAPI(username, password)
+        self.user = UserAPI(username, password)
 
-        # TEST:
-        self.user = UserAPI("60009", "67220")
+        # # TEST:
+        # self.user = UserAPI("60009", "67220")
 
         is_logged_in = self.user.login()  # json response if login incorrect
         if not is_logged_in:

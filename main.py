@@ -25,8 +25,7 @@ from gui.email_window.loading_screen import LoadingScreen
 from controllers.home_controller import HomeController
 
 from gui.email_window.email_window_main import EmailTrackerWindow
-from controllers.main_email_controller import EmailTrackerController
-from controllers.email_controller.scripts import main as script
+from controllers.email_controller.main_email_controller import EmailTrackerController
 
 
 class EsisAutoApp(MDApp):
@@ -39,10 +38,11 @@ class EsisAutoApp(MDApp):
         self.screen_manager = ScreenManager(transition=NoTransition())
         Window.size = (1200, 900)
 
-        controller = LoginController(self)
-        view = LoginWindow(controller=controller)
+        # controller = LoginController(self)
+        # view = LoginWindow(controller=controller)
+        self.load_main_window()
 
-        self.screen_manager.add_widget(view)
+        # self.screen_manager.add_widget(view)
 
         # notifications
         self.current_dialog = None  # might not need to track this
@@ -50,30 +50,31 @@ class EsisAutoApp(MDApp):
 
         return self.screen_manager
 
-    def load_main_window(self, user):
+    def load_main_window(self):
         """
         NOT FOR MANUAL USE
         Called by login controller after successful auth.
 
         :param user UserAPI: Login controller passes the user to this.
         """
-        self.user = user  # for logout
+        # self.user = user  # for logout
 
-        self.home_window_controller = HomeController(self, user)
-        self.home_window = HomeWindow(self.home_window_controller)
-
-        self.esis_window_controller = EsisAutoController(self, user)
-        self.esis_view = EsisAutoGUI(self.esis_window_controller)
+        # self.home_window_controller = HomeController(self, user)
+        # self.home_window = HomeWindow(self.home_window_controller)
+        #
+        # self.esis_window_controller = EsisAutoController(self, user)
+        # self.esis_view = EsisAutoGUI(self.esis_window_controller)
 
         self.loading_screen = LoadingScreen()
 
-        self.email_controller = EmailTrackerController(self, user, self.loading_screen)
+        self.email_controller = EmailTrackerController(self, self.loading_screen)
         self.email_tracker_view = EmailTrackerWindow(controller=self.email_controller)
 
         self.screen_manager.add_widget(self.loading_screen)
-        self.screen_manager.add_widget(self.esis_view)
-        self.screen_manager.add_widget(self.home_window)
-        self.screen_manager.current = "home_window"
+        self.screen_manager.add_widget(self.email_tracker_view)
+        # self.screen_manager.add_widget(self.esis_view)
+        # self.screen_manager.add_widget(self.home_window)
+        self.screen_manager.current = "email_window"
 
     # *********** small notifications **************
 
@@ -138,5 +139,4 @@ class EsisAutoApp(MDApp):
 
 
 if __name__ == "__main__":
-
     asyncio.run(EsisAutoApp().async_run(async_lib="asyncio"))

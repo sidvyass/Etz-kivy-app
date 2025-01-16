@@ -1,7 +1,7 @@
 from typing import Dict
 import win32com.client
 from kivy.lang import Builder
-from kivy.properties import StringProperty, ObjectProperty, NumericProperty
+from kivy.properties import StringProperty, ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
@@ -140,7 +140,7 @@ class EmailPopup(Popup):
 
     def populate_email_list(self, email_data):
         data = []
-        if not email_data:
+        if not email_data:  # base case without any data
             data.append(
                 {"subject": "No emails found", "date": "", "email_location": ""}
             )
@@ -156,13 +156,6 @@ class EmailPopup(Popup):
             )
 
         self.ids.email_list.data = data
-
-    def stop_tracking(self):
-        # Popup for confirmation
-        # remove from json
-        # close the popup
-        # reload the recycle view with new json
-        pass
 
 
 def open_details(data: Dict):

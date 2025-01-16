@@ -1,3 +1,19 @@
+import sys
+import os
+
+if getattr(sys, "frozen", False):
+    # Running in PyInstaller bundle
+    base_path = sys._MEIPASS
+else:
+    # Running in normal Python environment
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+# Ensure the project root is on sys.path
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+
 import asyncio
 from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager, NoTransition
@@ -7,6 +23,10 @@ from gui.email_window.email_window_main import EmailTrackerWindow
 from controllers.email_controller.main_email_controller import EmailTrackerController
 from gui.email_window.loading_screen import LoadingScreen
 from gui.email_window.edit_info_popup import EditInfoPopup
+
+from controllers.email_controller.main_email_controller import (
+    get_email_reply_gpt_response,
+)
 
 
 class EsisAutoApp(MDApp):
@@ -20,9 +40,7 @@ class EsisAutoApp(MDApp):
         self.loading_screen = LoadingScreen()
         self.screen_manager.add_widget(self.loading_screen)
 
-        self.email_controller = EmailTrackerController(
-            self, UserAPI("60009", "67220"), self.loading_screen
-        )
+        self.email_controller = EmailTrackerController(self, self.loading_screen)
         self.email_tracker_view = EmailTrackerWindow(controller=self.email_controller)
         self.screen_manager.add_widget(self.email_tracker_view)
 

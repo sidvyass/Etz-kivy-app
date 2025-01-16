@@ -1,4 +1,5 @@
 from fuzzywuzzy import fuzz
+from openai import OpenAI
 import pyodbc
 from typing import List, Optional, Tuple
 import os
@@ -7,29 +8,31 @@ import json
 import aiofiles
 import pythoncom
 import win32com.client
-import dotenv
+
+# import dotenv
 import os
 from typing import Dict, Any
-from controllers.user_controller import UserAPI  # only for type hints
 from controllers.email_controller.email_item_class import EmailItem
 from controllers.base_logger import getlogger
 from controllers.email_controller.scripts import main
 
 
-dotenv.load_dotenv()
+# dotenv.load_dotenv()
 
-
-DATA_FILE_PATH = os.getenv("DATA_FILE_PATH")
-CONFIG_FILE_PATH = os.getenv("CONFIG_FILE_PATH")
+client = OpenAI(
+    api_key="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"
+)
+DATA_FILE_PATH = r"./tracked_email_data.json"
+CONFIG_FILE_PATH = r"./client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
 
 
 class EmailTrackerController:
-    def __init__(self, main_app, user, loading_screen):
+    def __init__(self, main_app, loading_screen):
         self.main_app = main_app
         self.loading_screen = loading_screen
         self.tracked_emails: Dict[str, EmailItem] = {}
-        self.user: UserAPI = user  # NOTE: for live
+        # self.user: UserAPI = user  # NOTE: for live
         self.LOGGER = getlogger("Login controller")
 
     async def on_start_up(self, window_inst):
@@ -90,7 +93,7 @@ class EmailTrackerController:
         Runs on startup to build objects from the stored json file.
         """
 
-        data_buf = await self.read_json_file(DATA_FILE_PATH)
+        data_buf = await self.read_json_file(DATA_FILE_PATH)  # type: ignore
 
         for email_id, value_dict in data_buf.items():
             try:
@@ -103,6 +106,7 @@ class EmailTrackerController:
                     email_count=value_dict["email_count"],
                     emails_list=value_dict.get("email_item_obj", []),
                     fullname=value_dict.get("name", None),
+                    phone=value_dict.get("phone", None),
                 )
 
             except Exception as e:
@@ -188,7 +192,7 @@ class EmailTrackerController:
         """
 
         if msg.SenderEmailAddress in self.tracked_emails.keys():
-            self.tracked_emails[msg.SenderEmailAddress].emails_list.append(
+            self.tracked_emails[msg.SenderEmailAddress].incoming_emails_list.append(
                 (
                     msg.Subject,
                     str(msg.ReceivedTime),
@@ -210,8 +214,9 @@ class EmailTrackerController:
 
         if search_value:
             data: List[EmailItem] = []  # search results
-            for email_id in self.tracked_emails.keys():
-                if fuzz.ratio(email_id, search_value) > 30:
+            for email_id, email_obj in self.tracked_emails.items():
+                name = email_obj.fullname.lower() if email_obj.fullname else ""
+                if fuzz.partial_ratio(name, search_value) > 30:
                     data.append(self.tracked_emails[email_id])
 
             if len(data) > 1:
@@ -259,3 +264,25 @@ class EmailTrackerController:
                         party_pk,
                     )
                 return None
+
+
+# TODO: make this async
+def get_email_reply_gpt_response(
+    prompt, model="gpt-4", temperature=0.7, max_tokens=150
+):
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an email assistant. Write only the main reply body (excluding greeting and closing) given the last email body. Keep it concise, within 100 words.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {e}"

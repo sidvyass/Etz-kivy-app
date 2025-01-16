@@ -1,5 +1,4 @@
 import pythoncom
-import aioodbc
 import win32com.client
 import datetime
 import asyncio
@@ -10,6 +9,9 @@ DSN = "DRIVER={SQL Server};SERVER=ETZ-SQL;DATABASE=SANDBOX;Trusted_Connection=ye
 
 
 class EmailItem:
+    """This refers to each row on the main page of the screen."""
+
+    # TODO: this should be kwargs
     def __init__(
         self,
         email_id: str,  # MANDETORY
@@ -21,8 +23,10 @@ class EmailItem:
             List[Tuple[str, str, Tuple[str, str], int]]
         ] = None,
         attachment_count: Optional[int] = None,
+        phone: Optional[str] = None,
     ):
         self.LOGGER = getlogger("Email Item")
+        self.phone = phone
         self.email_id = email_id
         self.company_name = company_name
         self.fullname = fullname
@@ -79,6 +83,7 @@ class EmailItem:
 
                 start_of_year = f"{filter_year}-01-01"
 
+                # FIX: change this to reciever email Address.
                 filter_query = f"[SenderEmailAddress] = '{self.email_id}' AND [ReceivedTime] >= '{start_of_year}'"
                 filtered_items = messages.Restrict(filter_query)
 
@@ -109,4 +114,5 @@ class EmailItem:
             "outgoing_email_count": str(len(self.outgoing_email_list)),
             "name": self.fullname if self.fullname else "",
             "is_active": False,
+            "phone": self.phone if self.phone else "",
         }

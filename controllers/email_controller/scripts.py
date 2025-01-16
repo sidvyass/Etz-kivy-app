@@ -15,7 +15,7 @@ from controllers.base_logger import getlogger
 dotenv.load_dotenv()
 
 
-DSN = os.getenv("DSN")
+DSN = "DRIVER={SQL Server};SERVER=ETZ-SQL;DATABASE=SANDBOX;Trusted_Connection=yes"
 LOGGER = getlogger("Start up script")
 
 
@@ -34,7 +34,7 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
         async with aioodbc.connect(dsn=DSN) as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    "SELECT DISTINCT Name, Email FROM party WHERE Email IS NOT NULL;"
+                    "SELECT DISTINCT Name, Email, Phone FROM party WHERE Email IS NOT NULL;"
                 )
                 values = await cursor.fetchall()
     except Exception as e:
@@ -44,10 +44,12 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
     # TODO: beyond this it should be a different function
 
     # Validate and create EmailItem objects
-    for name, email_id in values:
+    for name, email_id, phone in values:
         try:
             validated_email = EmailItemModel(email_id=email_id)
-            email_item_list.append(EmailItem(validated_email.email_id, fullname=name))
+            email_item_list.append(
+                EmailItem(validated_email.email_id, fullname=name, phone=str(phone))
+            )
         except ValidationError:
             LOGGER.debug(f"Invalid email found: {email_id}")
 
@@ -142,7 +144,7 @@ async def save_configuration(
         return False
 
 
-async def main(progress_bar_func, filepaths: Dict[str, str]) -> None:
+async def main(progress_bar_func, filepaths: Dict[str, str | None]) -> None:
     """
     Main entry point for scraping and processing emails.
     """

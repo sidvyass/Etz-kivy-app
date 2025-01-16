@@ -2,6 +2,9 @@ Pipfile
 Pipfile.lock
 database/config.yaml
 testing/
+build/
+dist/
+*.spec
 *.md
 *.png
 *.json
