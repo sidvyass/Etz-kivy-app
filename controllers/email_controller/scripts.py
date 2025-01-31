@@ -34,7 +34,7 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
         async with aioodbc.connect(dsn=DSN) as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(
-                    "SELECT DISTINCT Name, Email, Phone FROM party WHERE Email IS NOT NULL;"
+                    "SELECT DISTINCT Name, Email, Phone, Buyer, Customer, Salesperson, Supplier, Prospect FROM party WHERE Email IS NOT NULL;"
                 )
                 values = await cursor.fetchall()
     except Exception as e:
@@ -44,11 +44,35 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
     # TODO: beyond this it should be a different function
 
     # Validate and create EmailItem objects
-    for name, email_id, phone in values:
+    for (
+        name,
+        email_id,
+        phone,
+        buyer,
+        customer,
+        salesperson,
+        supplier,
+        prospect,
+    ) in values:
         try:
             validated_email = EmailItemModel(email_id=email_id)
+            if buyer == 1:
+                contact_type = "Buyer"
+            elif customer == 1:
+                contact_type = "Customer"
+            elif salesperson == 1:
+                contact_type = "Sales Person"
+            elif supplier == 1:
+                contact_type = "Supplier"
+            else:
+                contact_type = "None Specified"
             email_item_list.append(
-                EmailItem(validated_email.email_id, fullname=name, phone=str(phone))
+                EmailItem(
+                    validated_email.email_id,
+                    fullname=name,
+                    phone=str(phone),
+                    contact_type=contact_type,
+                )
             )
         except ValidationError:
             LOGGER.debug(f"Invalid email found: {email_id}")
@@ -144,7 +168,7 @@ async def save_configuration(
         return False
 
 
-async def main(progress_bar_func, filepaths: Dict[str, str | None]) -> None:
+async def main(progress_bar_func, filepaths: dict[str, str | None]) -> None:
     """
     Main entry point for scraping and processing emails.
     """
@@ -168,6 +192,8 @@ async def main(progress_bar_func, filepaths: Dict[str, str | None]) -> None:
     if not email_item_list:
         LOGGER.error("Email data could not be fetched. Exiting.")
         raise IOError("Database connection returned no emails.")
+
+    LOGGER.info("Fetching email data complete")
 
     success = await process_emails(email_item_list, progress_bar_func)
     if not success:

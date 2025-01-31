@@ -15,6 +15,7 @@ class EmailItem:
     def __init__(
         self,
         email_id: str,  # MANDETORY
+        contact_type: str,
         email_count: int = 0,
         company_name: Optional[str] = None,
         fullname: Optional[str] = None,
@@ -36,6 +37,7 @@ class EmailItem:
             emails_list if emails_list else []
         )  # List of (subject, received_time, (EntryID, StoreID))
         self.outgoing_email_list = outgoing_emails_list if outgoing_emails_list else []
+        self.contact_type = contact_type
 
     def __repr__(self) -> str:
         return f"Email ID: {self.email_id}\nCount: {self.incoming_email_count}"
@@ -115,4 +117,5 @@ class EmailItem:
             "name": self.fullname if self.fullname else "",
             "is_active": False,
             "phone": self.phone if self.phone else "",
+            "type_of_contact": self.contact_type,
         }

@@ -115,11 +115,19 @@ KV = """
                 size_hint_y: None
                 size_hint_x: 1
                 height: dp(40)
-                cols: 6
+                cols: 7
                 spacing: dp(5)
 
                 Label:
-                    text: "Name"
+                    text: "Party Name"
+                    size_hint_x: 0.2
+                    halign: 'center'
+                    valign: 'middle'
+                    text_size: self.size
+                    padding_x: dp(5)
+
+                Label:
+                    text: "Type"
                     size_hint_x: 0.2
                     halign: 'center'
                     valign: 'middle'
@@ -187,7 +195,7 @@ KV = """
 
 <EmailTrackerRow>:
     GridLayout:
-        cols: 6
+        cols: 7
         size_hint_y: None
         size_hint_x: 1
         height: dp(40)
@@ -195,6 +203,14 @@ KV = """
 
         Label:
             text: root.name
+            size_hint_x: 0.2
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            padding_x: dp(5)
+
+        Label:
+            text: root.type_of_contact
             size_hint_x: 0.2
             halign: 'center'
             valign: 'middle'
@@ -284,6 +300,7 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
     email_id = StringProperty()
     email_count = StringProperty()  # incoming emails
     name = StringProperty()
+    type_of_contact = StringProperty()
     outgoing_emails = ObjectProperty()
     outgoing_email_count = StringProperty()
     is_selected = BooleanProperty()
@@ -297,6 +314,7 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
 
     # for incoming emails
     def open_details(self):
+        # TODO: change the naming for either of these two
         open_details(
             {
                 "email_id": self.email_id,

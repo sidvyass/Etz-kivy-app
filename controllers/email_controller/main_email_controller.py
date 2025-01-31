@@ -81,7 +81,7 @@ class EmailTrackerController:
         self.main_app.screen_manager.current = "loading_screen_email_app"
 
         try:
-            last_entry_id = await main(self.loading_screen.update_progress, filepaths)
+            last_entry_id = await main(self.loading_screen.update_progress, filepaths)  # type: ignore
             return last_entry_id
         except Exception as e:
             self.LOGGER.error(f"Failed to run indexing script: {e}")
@@ -107,6 +107,7 @@ class EmailTrackerController:
                     emails_list=value_dict.get("email_item_obj", []),
                     fullname=value_dict.get("name", None),
                     phone=value_dict.get("phone", None),
+                    contact_type=value_dict.get("type_of_contact", "None Found"),
                 )
 
             except Exception as e:
@@ -269,7 +270,7 @@ class EmailTrackerController:
 # TODO: make this async
 def get_email_reply_gpt_response(
     prompt, model="gpt-4", temperature=0.7, max_tokens=150
-):
+) -> str:
     try:
         response = client.chat.completions.create(
             model=model,
@@ -283,6 +284,10 @@ def get_email_reply_gpt_response(
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content
+        reply = response.choices[0].message.content
+        if reply:
+            return reply
+        else:
+            return ""
     except Exception as e:
         return f"Error: {e}"

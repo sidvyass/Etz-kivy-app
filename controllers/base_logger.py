@@ -1,6 +1,5 @@
 import sys
 import loguru
-import logging
 
 
 def getlogger(name: str = "DefaultName", level="DEBUG") -> loguru.logger:  # type: ignore
@@ -26,6 +25,17 @@ def getlogger(name: str = "DefaultName", level="DEBUG") -> loguru.logger:  # typ
         format=logger_format,
         colorize=True,
         serialize=False,
+    )
+
+    logobj.add(
+        "logs/output.log",  # Specify your desired log file path
+        level=level,
+        format=logger_format,
+        colorize=False,  # No color in file logs
+        serialize=False,
+        rotation="10 MB",  # Automatically rotate after 10 MB
+        retention="7 days",  # Keep logs for 7 days
+        compression="zip",  # Compress rotated logs
     )
 
     return logobj

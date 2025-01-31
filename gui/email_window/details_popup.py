@@ -1,4 +1,5 @@
 from typing import Dict
+from datetime import datetime
 import win32com.client
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty
@@ -8,6 +9,9 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.lang import Builder
+
+
+# NOTE: The last function in this file is imported.
 
 
 # TODO: dont render the open email button where the email has no location or is empty
@@ -22,6 +26,9 @@ KV = """
 
     Label:
         text: root.subject
+        width: dp(150)
+    Label:
+        text: root.email_id
         width: dp(150)
     Label:
         text: root.date
@@ -56,6 +63,9 @@ KV = """
             orientation: 'horizontal'
             Label:
                 text: "Subject"
+                width: dp(150)
+            Label:
+                text: "From"
                 width: dp(150)
             Label:
                 text: "Date"
@@ -120,6 +130,7 @@ class EmailDetailRow(BoxLayout):
     date = StringProperty()
     email_location = ObjectProperty()
     attachment_count = StringProperty()
+    email_id = StringProperty()
 
     def open_email(self):
         if not self.email_location:
@@ -134,8 +145,10 @@ class EmailDetailRow(BoxLayout):
 class EmailPopup(Popup):
     popup_title = StringProperty("Emails")
 
-    def __init__(self, email_data, **kwargs):
+    # TODO: make this email_id a list of emails
+    def __init__(self, email_data, email_id, **kwargs):
         super().__init__(**kwargs)
+        self.email_id = email_id
         self.populate_email_list(email_data)
 
     def populate_email_list(self, email_data):
@@ -146,20 +159,24 @@ class EmailPopup(Popup):
             )
         for email_details in email_data:
             subject, date, location, attachment_count = email_details
+            dt = datetime.fromisoformat(date)
+            formatted_date = dt.strftime("%m/%d/%Y  %I:%M %p")
             data.append(
                 {
                     "subject": subject,
-                    "date": str(date),  # TODO: parse this before assignment
+                    "date": formatted_date,
                     "email_location": location,
                     "attachment_count": str(attachment_count),
+                    "email_id": self.email_id,
                 }
             )
-
         self.ids.email_list.data = data
 
 
 def open_details(data: Dict):
     email_data = data.get("email_item_obj", [])
-    email_id = data.get("email_id", "Unknown")
-    popup = EmailPopup(email_data=email_data, popup_title=f"Emails from {email_id}")
+    email_id = data.get("email_id", "None")
+    popup = EmailPopup(
+        email_data=email_data, email_id=email_id, popup_title=f"Emails from {email_id}"
+    )
     popup.open()
