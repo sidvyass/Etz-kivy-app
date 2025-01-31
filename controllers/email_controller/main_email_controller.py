@@ -19,9 +19,6 @@ from controllers.email_controller.scripts import main
 
 # dotenv.load_dotenv()
 
-client = OpenAI(
-    api_key="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"
-)
 DATA_FILE_PATH = r"./tracked_email_data.json"
 CONFIG_FILE_PATH = r"./client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
