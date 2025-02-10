@@ -4,6 +4,7 @@ database/config.yaml
 testing/
 build/
 dist/
+logs/
 *.spec
 *.md
 *.png

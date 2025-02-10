@@ -19,8 +19,8 @@ from controllers.email_controller.scripts import main
 
 # dotenv.load_dotenv()
 
-DATA_FILE_PATH = r"./tracked_email_data.json"
-CONFIG_FILE_PATH = r"./client_data.json"
+DATA_FILE_PATH = r"Z:\IT Devlopment\amir_mirror_configs\data_file.json"
+CONFIG_FILE_PATH = r"Z:\IT Devlopment\amir_mirror_configs\config_file.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
 
 
