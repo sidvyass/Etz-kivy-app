@@ -12,6 +12,9 @@ from kivymd.uix.dialog import (
     MDDialogHeadlineText,
     MDDialogSupportingText,
 )
+from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText, MDDialogContentContainer
+from kivymd.uix.button import MDButton, MDButtonText
+from kivymd.uix.list import MDListItem, MDListItemSupportingText
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty
@@ -24,7 +27,7 @@ from controllers.email_controller.main_email_controller import (
     EmailTrackerController,
     get_email_reply_gpt_response,
 )
-from gui.email_window.details_popup import open_details
+from gui.email_window.details_popup import notification_obj, open_details
 from gui.email_window.config_popup import RV
 from gui.email_window.edit_info_popup import EditInfoPopup
 
@@ -394,8 +397,8 @@ class EmailTrackerRow(RecycleDataViewBehavior, BoxLayout):
                 )
                 reply_item.Display()
             except Exception as e:
-                # TODO: manage this more carefully
-                pass
+                # TODO: log this error
+                notification_obj("Email location is invalid. Send New instead.").open()
 
         def send_new(inst):
             outlook = win32com.client.Dispatch("Outlook.Application")
@@ -443,12 +446,10 @@ class EmailTrackerWindow(Screen):
     def __init__(self, controller, **kwargs) -> None:
         super(EmailTrackerWindow, self).__init__(**kwargs)
         self.controller: EmailTrackerController = controller
-        self.start_up_task = asyncio.create_task(self.controller.on_start_up(self))
+        asyncio.create_task(self.show_inbox_selection_popup())
+        # self.start_up_task = asyncio.create_task(self.controller.on_start_up(self))
 
     def on_enter(self, *args):
-        self.background_tasks = Clock.schedule_interval(
-            self.outlook_email_listener_wrapper, 5
-        )
         return super().on_enter(*args)
 
     def on_leave(self, *args):
@@ -468,10 +469,7 @@ class EmailTrackerWindow(Screen):
         ]
 
     def outlook_email_listener_wrapper(self, dt):
-        if self.start_up_task.done():
-            asyncio.create_task(self.controller.listen_for_emails())
-        else:
-            self.controller.LOGGER.info("skipping as startup is still not complete")
+        asyncio.create_task(self.controller.listen_for_emails())
 
     # FIX:
     def config_popup(self):
@@ -485,6 +483,54 @@ class EmailTrackerWindow(Screen):
             auto_dismiss=True,
         )
         popup.open()
+
+    async def show_inbox_selection_popup(self):
+        future = asyncio.Future()
+
+        def on_selection(choice):
+            future.set_result(choice)
+            dialog.dismiss()
+
+        items = []
+
+        outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+
+        for store in outlook.Stores:
+            items.append(store.DisplayName)
+
+        # Generate list items dynamically
+        list_items = [
+            MDListItem(
+                MDListItemSupportingText(text=item),
+                on_release=lambda _, text=item: on_selection(text),
+            )
+            for item in items
+        ]
+
+        dialog = MDDialog(
+            MDDialogHeadlineText(text="Select Inbox", halign="left"),
+            MDDialogContentContainer(*list_items, orientation="vertical"),
+            MDButton(
+                MDButtonText("Cancel"),
+                pos_hint={"center_x": 0.5},
+                on_release=lambda x: dialog.dismiss(),
+            ),
+        )
+
+        dialog.open()
+
+        selected_inbox = await future
+
+        print(f"Selected inbox: {selected_inbox}")
+
+        # start up tasks
+        self.controller.inbox_name = selected_inbox
+
+        await self.controller.on_start_up(self)
+
+        self.background_tasks = Clock.schedule_interval(
+            self.outlook_email_listener_wrapper, 5
+        )
 
 
 Builder.load_string(KV)

@@ -85,7 +85,10 @@ async def fetch_party_email_data() -> Optional[List[EmailItem]]:
 
 
 async def process_emails(
-    email_item_list: List[EmailItem], progress_bar_func, max_tasks: int = 20
+    email_item_list: List[EmailItem],
+    progress_bar_func,
+    max_tasks: int = 20,
+    inbox_name: str | None = None,
 ) -> bool:
     """
     Scrapes emails from Outlook and processes them.
@@ -100,7 +103,7 @@ async def process_emails(
 
     async def limited_task(email_item: EmailItem):
         async with semaphore:
-            await email_item.find_emails()
+            await email_item.find_emails(inbox_name)
             progress_bar_func(val=progress_increment)
 
     tasks = [limited_task(email_item) for email_item in email_item_list]
@@ -152,6 +155,8 @@ async def save_configuration(
         "tracked_email_filepath": tracked_emails_file,
         "email_indexing": True,
         "last_entry_id": latest_entry_id,
+        "mirror": True,
+        "inbox_file": "",
     }
 
     try:
@@ -168,7 +173,9 @@ async def save_configuration(
         return False
 
 
-async def main(progress_bar_func, filepaths: dict[str, str | None]) -> None:
+async def main(
+    progress_bar_func, filepaths: dict[str, str | None], inbox_name: str | None = None
+) -> None:
     """
     Main entry point for scraping and processing emails.
     """
@@ -195,7 +202,9 @@ async def main(progress_bar_func, filepaths: dict[str, str | None]) -> None:
 
     LOGGER.info("Fetching email data complete")
 
-    success = await process_emails(email_item_list, progress_bar_func)
+    success = await process_emails(
+        email_item_list, progress_bar_func, inbox_name=inbox_name
+    )
     if not success:
         LOGGER.critical("Email processing failed. Exiting.")
         raise IOError("FATAL: Error while reading the emails.")

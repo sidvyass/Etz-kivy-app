@@ -19,8 +19,8 @@ from controllers.email_controller.scripts import main
 
 # dotenv.load_dotenv()
 
-DATA_FILE_PATH = r"Z:\IT Devlopment\amir_mirror_configs\data_file.json"
-CONFIG_FILE_PATH = r"Z:\IT Devlopment\amir_mirror_configs\config_file.json"
+DATA_FILE_PATH = r"./tracked_email_data.json"
+CONFIG_FILE_PATH = r"./client_data.json"
 EMAIL_PROCESS_LIMIT = 50  # WARNING: Do not remove.
 
 
@@ -29,6 +29,7 @@ class EmailTrackerController:
         self.main_app = main_app
         self.loading_screen = loading_screen
         self.tracked_emails: Dict[str, EmailItem] = {}
+        self.inbox_name = None
         # self.user: UserAPI = user  # NOTE: for live
         self.LOGGER = getlogger("Login controller")
 
@@ -38,13 +39,13 @@ class EmailTrackerController:
         :param window_inst Screen(KivyMD): The instance of the GUI.
         """
 
-        assert DATA_FILE_PATH
-        assert CONFIG_FILE_PATH
+        # MIRROR Code - pulling from the corp data.
+        self.LOGGER.info("Running Mirror...")
 
         # TODO: ask the user to supply the file
         # TODO: ask the user before running the script
 
-        # WARNING: We are building EmailItem objects twice on the first iteration.
+        # FIX: We are building EmailItem objects twice on the first iteration.
         # first when we scrape outlook and second when we populate the GUI.
 
         if not (os.path.exists(DATA_FILE_PATH) and os.path.exists(CONFIG_FILE_PATH)):
@@ -77,8 +78,10 @@ class EmailTrackerController:
         self.LOGGER.info("No config found. Running script...")
         self.main_app.screen_manager.current = "loading_screen_email_app"
 
+        # TODO: add a notification for no inbox name and run default
+
         try:
-            last_entry_id = await main(self.loading_screen.update_progress, filepaths)  # type: ignore
+            last_entry_id = await main(self.loading_screen.update_progress, filepaths, inbox_name=self.inbox_name)  # type: ignore
             return last_entry_id
         except Exception as e:
             self.LOGGER.error(f"Failed to run indexing script: {e}")

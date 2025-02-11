@@ -42,8 +42,11 @@ class EmailItem:
     def __repr__(self) -> str:
         return f"Email ID: {self.email_id}\nCount: {self.incoming_email_count}"
 
+    # NOTE: MIRROR Change: scraping the pst file inbox and not the regular inbox.
     async def find_emails(
-        self, filter_year: int = datetime.datetime.now().year
+        self,
+        store_name: str | None = None,
+        filter_year: int = datetime.datetime.now().year,
     ) -> None:
         """
         Finds all emails by self.email_id. Runs in an executor to be non-blocking.
@@ -56,9 +59,27 @@ class EmailItem:
                     "MAPI"
                 )
 
-                # NOTE: Scraping INBOX
-                inbox = outlook.GetDefaultFolder(6)  # 6 refers to the inbox
+                if store_name:
+                    inbox = None
+                    try:
+                        for store in outlook.Stores:
+                            if store.DisplayName == store_name:
+                                root_folder = store.GetRootFolder()  # 6 = Inbox
+                                for folder in root_folder.Folders:
+                                    if folder.Name.lower() == "inbox":
+                                        inbox = folder
+                    except Exception as e:
+                        print(e)
+                        pass
+                else:
+                    # NOTE: Scraping default INBOX
+                    inbox = outlook.GetDefaultFolder(6)  # 6 refers to the inbox
+
+                if not inbox:
+                    raise ValueError("PST inbox could not be found.")
+
                 messages = inbox.Items
+
                 messages.Sort("[ReceivedTime]", Descending=True)
 
                 start_of_year = f"{filter_year}-01-01"

@@ -1,3 +1,4 @@
+import pywintypes
 from typing import Dict
 from datetime import datetime
 import win32com.client
@@ -9,6 +10,13 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.lang import Builder
+from kivymd.uix.snackbar import (
+    MDSnackbar,
+    MDSnackbarSupportingText,
+    MDSnackbarButtonContainer,
+    MDSnackbarCloseButton,
+)
+from kivy.metrics import dp
 
 
 # NOTE: The last function in this file is imported.
@@ -125,6 +133,24 @@ KV = """
 Builder.load_string(KV)
 
 
+def notification_obj(text):
+    return MDSnackbar(
+        MDSnackbarSupportingText(
+            text=text,
+        ),
+        MDSnackbarButtonContainer(
+            MDSnackbarCloseButton(
+                icon="close",
+            ),
+            pos_hint={"center_y": 0.5},
+        ),
+        y=dp(24),
+        orientation="horizontal",
+        pos_hint={"center_x": 0.5},
+        size_hint_x=0.5,
+    )
+
+
 class EmailDetailRow(BoxLayout):
     subject = StringProperty()
     date = StringProperty()
@@ -134,12 +160,25 @@ class EmailDetailRow(BoxLayout):
 
     def open_email(self):
         if not self.email_location:
-            # TODO: notify the user that there is no location
+            notification_obj("Email Location not found. Check config files").open()
             return
-        outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-        entry_id, store_id = self.email_location
-        email_item = outlook.GetItemFromID(entry_id, store_id)
-        email_item.display()
+
+        try:
+            outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace(
+                "MAPI"
+            )
+            entry_id, store_id = self.email_location
+            email_item = outlook.GetItemFromID(entry_id, store_id)
+
+            if email_item is None:
+                raise ValueError("Could not find email.")
+
+            email_item.display()
+        except pywintypes.com_error as e:
+            notification_obj(f"Email Location is invalid: {self.email_id}").open()
+
+        except Exception as ex:
+            notification_obj("Unknown error occured").open()
 
 
 class EmailPopup(Popup):
